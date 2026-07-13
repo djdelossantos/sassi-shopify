@@ -1,0 +1,172 @@
+<footer class="sassi-footer" data-dark>
+  <div class="sassi-footer__grid">
+    <div class="sassi-footer__brand">
+      <a href="{{ routes.root_url }}" class="sassi-footer__logo" title="{{ shop.name }}" style="--sassi-logo-mask: url('{{ 'sassi-logo.svg' | asset_url }}');"></a>
+
+      {% form 'customer', id: 'sassi-newsletter-form', class: 'sassi-newsletter' %}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        <input
+          type="email"
+          name="contact[email]"
+          class="sassi-newsletter__input"
+          placeholder="{{ 'newsletter.placeholder' | t }}"
+          required
+        >
+        <button type="submit" class="sassi-newsletter__submit" data-newsletter-submit>
+          <span data-label-default>{{ 'newsletter.submit' | t }}</span>
+          <span data-label-submitted hidden>{{ 'newsletter.submitted' | t }}</span>
+        </button>
+        {%- if form.posted_successfully? -%}
+          <p class="sassi-newsletter__success">{{ 'newsletter.success' | t }}</p>
+        {%- endif -%}
+      {% endform %}
+    </div>
+
+    {% for block in section.blocks %}
+      {% case block.type %}
+        {% when 'link_list' %}
+          <div class="sassi-footer__col" {{ block.shopify_attributes }}>
+            <div class="sassi-footer__col-title">{{ block.settings.title }}</div>
+            {% if block.settings.menu != blank %}
+              {% for link in block.settings.menu.links %}
+                <a href="{{ link.url }}">{{ link.title }}</a>
+              {% endfor %}
+            {% endif %}
+          </div>
+      {% endcase %}
+    {% endfor %}
+  </div>
+
+  <div class="sassi-footer__copyright">
+    {%- if section.settings.copyright_text != blank -%}
+      {{ section.settings.copyright_text }}
+    {%- else -%}
+      © {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.
+    {%- endif -%}
+  </div>
+</footer>
+
+{% stylesheet %}
+.sassi-footer {
+  background: var(--color-red);
+  color: var(--color-white);
+  padding: 48px 24px 28px 24px;
+}
+
+.sassi-footer__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 48px;
+}
+
+.sassi-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sassi-footer__logo {
+  width: 120px;
+  height: 51px;
+  background-color: var(--color-white);
+  -webkit-mask: var(--sassi-logo-mask) no-repeat left center / contain;
+  mask: var(--sassi-logo-mask) no-repeat left center / contain;
+  display: block;
+}
+
+.sassi-newsletter {
+  display: flex;
+  gap: 8px;
+  max-width: 340px;
+  background: var(--color-white);
+  border-radius: var(--radius-pill);
+  padding: 4px 4px 4px 16px;
+  align-items: center;
+}
+.sassi-newsletter__input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--color-obsidian);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+}
+.sassi-newsletter__submit {
+  background: var(--color-red);
+  border: none;
+  color: var(--color-white);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sassi-newsletter__submit:hover { background: var(--color-obsidian); }
+.sassi-newsletter__success {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-footer-fg);
+}
+
+.sassi-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sassi-footer__col-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sassi-footer__col a {
+  color: var(--color-white);
+  text-decoration: none;
+  font-size: 13.5px;
+}
+.sassi-footer__col a:hover { color: var(--color-obsidian); }
+
+.sassi-footer__copyright {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 900px) {
+  .sassi-footer__grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 560px) {
+  .sassi-footer__grid { grid-template-columns: 1fr; }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text", "id": "copyright_text", "label": "Copyright text", "info": "Leave blank to auto-generate from store name" }
+  ],
+  "blocks": [
+    {
+      "type": "link_list",
+      "name": "Link column",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Column title" },
+        { "type": "link_list", "id": "menu", "label": "Menu" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "default": {
+    "blocks": [
+      { "type": "link_list", "settings": { "title": "About" } },
+      { "type": "link_list", "settings": { "title": "Shop" } },
+      { "type": "link_list", "settings": { "title": "Support" } }
+    ]
+  }
+}
+{% endschema %}

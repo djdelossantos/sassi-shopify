@@ -1,0 +1,69 @@
+{%- if section.settings.enabled -%}
+<div class="sassi-marquee-wrap" data-dark>
+  <div class="sassi-marquee" data-sassi-marquee>
+    {%- for i in (1..4) -%}
+      <div class="sassi-marquee__strip">
+        {%- for block in section.blocks -%}
+          <span>{{ block.settings.text }}</span><span class="sassi-marquee__dot">●</span>
+        {%- endfor -%}
+      </div>
+    {%- endfor -%}
+  </div>
+</div>
+{%- endif -%}
+
+{% stylesheet %}
+.sassi-marquee-wrap {
+  background: var(--color-obsidian);
+  color: var(--color-white);
+  overflow: hidden;
+  padding: 13px 0;
+}
+.sassi-marquee {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.sassi-marquee__strip {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding-right: 32px;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 15px;
+}
+.sassi-marquee__dot {
+  color: var(--color-red);
+  font-size: 10px;
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Marquee ticker",
+  "settings": [
+    { "type": "checkbox", "id": "enabled", "label": "Show ticker", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "text",
+      "name": "Ticker item",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "default": {
+    "blocks": [
+      { "type": "text", "settings": { "text": "carry on" } },
+      { "type": "text", "settings": { "text": "built for the people we rely on" } },
+      { "type": "text", "settings": { "text": "premium and accessible" } }
+    ]
+  },
+  "presets": [
+    { "name": "Marquee ticker" }
+  ]
+}
+{% endschema %}

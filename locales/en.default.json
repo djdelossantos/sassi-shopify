@@ -1,0 +1,13 @@
+{
+  "general": {
+    "search": "Search",
+    "account": "Account",
+    "cart": "Bag"
+  },
+  "newsletter": {
+    "placeholder": "Email for the next drop",
+    "submit": "Notify Me",
+    "submitted": "Noted.",
+    "success": "Thanks for subscribing"
+  }
+}

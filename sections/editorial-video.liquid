@@ -1,0 +1,77 @@
+<section class="sassi-editorial" data-screen-label="Editorial row">
+  <div class="sassi-editorial__media" data-reveal>
+    <div class="sassi-image-slot">
+      {%- if section.settings.image != blank -%}
+        {{ section.settings.image | image_url: width: 1200 | image_tag: widths: '500,800,1200', sizes: '(min-width: 900px) 45vw, 90vw' }}
+      {%- else -%}
+        <div class="sassi-image-slot__label">Editorial — candid street shot, heavy grain</div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="sassi-editorial__media sassi-editorial__media--video" data-reveal>
+    {%- if section.settings.video != blank -%}
+      {{ section.settings.video | video_tag: autoplay: true, loop: true, muted: true, controls: false, class: 'sassi-editorial__video' }}
+    {%- else -%}
+      <div class="sassi-video-placeholder">
+        <div class="sassi-video-placeholder__box">
+          <strong>LOOPING VIDEO — B-ROLL</strong>
+          <div>muted · autoplay · no controls</div>
+        </div>
+      </div>
+    {%- endif -%}
+    <span class="sassi-editorial__rec"><span class="sassi-editorial__rec-dot">●</span> REC</span>
+  </div>
+</section>
+
+{% stylesheet %}
+.sassi-editorial {
+  padding: 16px 16px 0 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.sassi-editorial__media {
+  position: relative;
+  aspect-ratio: 1 / 1.1;
+}
+.sassi-editorial__media--video { overflow: hidden; }
+.sassi-editorial__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sassi-editorial__rec {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-red);
+}
+.sassi-editorial__rec-dot {
+  animation: sassi-blink 1.2s steps(1) infinite;
+}
+
+@media (max-width: 700px) {
+  .sassi-editorial { grid-template-columns: 1fr; }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Editorial + video",
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Editorial image" },
+    { "type": "video", "id": "video", "label": "B-roll video" }
+  ],
+  "presets": [
+    { "name": "Editorial + video" }
+  ]
+}
+{% endschema %}
