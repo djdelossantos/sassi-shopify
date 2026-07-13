@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/open-sauce-sans@5.2.5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/open-sauce-sans@5.2.5/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/open-sauce-sans@5.2.5/700.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/open-sauce-sans@5.2.5/800.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #EDEBE6; }
+  body { -webkit-font-smoothing: antialiased; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+</helmet>
+
+<div style="font-family: 'Open Sauce Sans', Helvetica, sans-serif; color: #12100E; background: #EDEBE6; padding: 48px 40px; max-width: 1000px; margin: 0 auto;">
+
+  <!-- HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 24px; border-bottom: 2px solid #12100E; flex-wrap: wrap;">
+    <div>
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #FF4000; text-transform: uppercase;">Design Spec · v1</div>
+      <h1 style="margin: 8px 0 0 0; font-weight: 800; font-size: 52px; letter-spacing: -0.03em; text-transform: uppercase;">SASSi</h1>
+    </div>
+    <div style="font-size: 13px; line-height: 1.6; color: #4A463E; text-align: right;">Carry On — Landing Page<br>Figma rebuild reference sheet</div>
+  </div>
+
+  <!-- COLORS -->
+  <section style="padding: 40px 0 8px 0;">
+    <h2 style="margin: 0 0 20px 0; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-transform: uppercase;">01 — Color</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 92px; background: #12100E;"></div>
+        <div style="padding: 12px 14px;"><div style="font-weight: 700; font-size: 14px;">Obsidian</div><div style="font-family: monospace; font-size: 13px; color: #4A463E;">#12100E</div><div style="font-size: 11px; color: #8A8378; margin-top: 4px;">Ink / text / footer</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 92px; background: #FF4000;"></div>
+        <div style="padding: 12px 14px;"><div style="font-weight: 700; font-size: 14px;">Vivid Red</div><div style="font-family: monospace; font-size: 13px; color: #4A463E;">#FF4000</div><div style="font-size: 11px; color: #8A8378; margin-top: 4px;">Accent — use sparingly</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 92px; background: #FFFFFF; border-bottom: 1px solid #E4E1DA;"></div>
+        <div style="padding: 12px 14px;"><div style="font-weight: 700; font-size: 14px;">White</div><div style="font-family: monospace; font-size: 13px; color: #4A463E;">#FFFFFF</div><div style="font-size: 11px; color: #8A8378; margin-top: 4px;">Page background</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 92px; background: #D9D6CE;"></div>
+        <div style="padding: 12px 14px;"><div style="font-weight: 700; font-size: 14px;">Placeholder Gray</div><div style="font-family: monospace; font-size: 13px; color: #4A463E;">#D9D6CE</div><div style="font-size: 11px; color: #8A8378; margin-top: 4px;">Empty image slot</div></div>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px;">
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 60px; background: #4A463E;"></div>
+        <div style="padding: 10px 14px;"><div style="font-weight: 700; font-size: 13px;">Body Text</div><div style="font-family: monospace; font-size: 12px; color: #4A463E;">#4A463E</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 60px; background: #F2EFE7;"></div>
+        <div style="padding: 10px 14px;"><div style="font-weight: 700; font-size: 13px;">Footer Fg</div><div style="font-family: monospace; font-size: 12px; color: #4A463E;">#F2EFE7</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="height: 60px; background: #6B6459;"></div>
+        <div style="padding: 10px 14px;"><div style="font-weight: 700; font-size: 13px;">Footer Muted</div><div style="font-family: monospace; font-size: 12px; color: #4A463E;">#6B6459</div></div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; padding: 12px 14px; box-sizing: border-box;">
+        <div style="font-size: 11px; color: #8A8378; line-height: 1.5;">Light Bronze <span style="font-family: monospace;">#A97541</span> retired in v1 — red replaces it as the sole accent.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section style="padding: 40px 0 8px 0; border-top: 1px solid #D5D2CB; margin-top: 32px;">
+    <h2 style="margin: 0 0 8px 0; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-transform: uppercase;">02 — Typography</h2>
+    <div style="font-size: 14px; color: #4A463E; margin-bottom: 24px;">Typeface: <strong>Open Sauce Sans</strong> (npm: <span style="font-family: monospace;">@fontsource/open-sauce-sans</span>). One family, weights 400 / 600 / 700 / 800.</div>
+    <div style="background: #FFFFFF; border-radius: 8px; padding: 8px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+      <div style="display: flex; align-items: baseline; gap: 20px; padding: 16px 0; border-bottom: 1px solid #EDEBE6;">
+        <div style="width: 150px; font-family: monospace; font-size: 12px; color: #8A8378; flex-shrink: 0;">Hero · 800 · uppercase<br>clamp(56–180px) / 0.86</div>
+        <div style="font-weight: 800; font-size: 44px; letter-spacing: -0.04em; text-transform: uppercase; line-height: 1;">Carry On.</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 20px; padding: 16px 0; border-bottom: 1px solid #EDEBE6;">
+        <div style="width: 150px; font-family: monospace; font-size: 12px; color: #8A8378; flex-shrink: 0;">Section H2 · 800<br>clamp(28–58px) / 1.02</div>
+        <div style="font-weight: 800; font-size: 34px; letter-spacing: -0.02em; text-transform: uppercase;">The First Drop</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 20px; padding: 16px 0; border-bottom: 1px solid #EDEBE6;">
+        <div style="width: 150px; font-family: monospace; font-size: 12px; color: #8A8378; flex-shrink: 0;">Product name · 700<br>16–18px</div>
+        <div style="font-weight: 700; font-size: 18px;">The Overtime Backpack</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 20px; padding: 16px 0; border-bottom: 1px solid #EDEBE6;">
+        <div style="width: 150px; font-family: monospace; font-size: 12px; color: #8A8378; flex-shrink: 0;">Body · 400<br>16px / 1.7</div>
+        <div style="font-weight: 400; font-size: 16px; line-height: 1.7; max-width: 440px; color: #4A463E;">Bags for the shift, the commute, and everything you haul in between.</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 20px; padding: 16px 0;">
+        <div style="width: 150px; font-family: monospace; font-size: 12px; color: #8A8378; flex-shrink: 0;">Nav / label · 600<br>13px</div>
+        <div style="font-weight: 600; font-size: 13px;">Shop · Story · Bag</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAYOUT & TOKENS -->
+  <section style="padding: 40px 0 8px 0; border-top: 1px solid #D5D2CB; margin-top: 32px;">
+    <h2 style="margin: 0 0 20px 0; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-transform: uppercase;">03 — Layout &amp; tokens</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+      <div style="background: #FFFFFF; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 10px;">Grid</div>
+        <div style="font-size: 13px; line-height: 1.9; color: #4A463E;">12-column · gutters 24px (row) / 32px (col)<br>Page padding: 32px horizontal<br>Anti-grid: cards offset with margin-top (56 / 48 / 40 / -16px)</div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 10px;">Radius</div>
+        <div style="font-size: 13px; line-height: 1.9; color: #4A463E;">Image / video frames: <strong>8px</strong><br>Buttons &amp; pills: <strong>40px</strong> (fully rounded)<br>No hard section borders — whitespace only</div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 10px;">Buttons</div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: 700; background: #12100E; color: #FFF; padding: 12px 24px; border-radius: 40px;">Shop the drop →</span>
+          <span style="font-size: 13px; font-weight: 700; border: 1.5px solid #12100E; padding: 8px 16px; border-radius: 40px;">Add</span>
+        </div>
+        <div style="font-size: 12px; color: #8A8378;">Hover → fill Vivid Red, text white</div>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 10px;">Motion &amp; texture</div>
+        <div style="font-size: 13px; line-height: 1.9; color: #4A463E;">Fixed transparent header, color inverts over dark sections<br>Velocity-driven marquee · scroll reveals · staggered hero intro<br>Film grain overlay ~14% · Lenis smooth scroll</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTIONS -->
+  <section style="padding: 40px 0 8px 0; border-top: 1px solid #D5D2CB; margin-top: 32px;">
+    <h2 style="margin: 0 0 20px 0; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-transform: uppercase;">04 — Page order</h2>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">01</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Fixed header</span><span style="font-size: 13px; color: #4A463E;">Logo left · centered nav · search/account/bag icons</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">02</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Full-screen video hero</span><span style="font-size: 13px; color: #4A463E;">Looping video bg · "Carry On." · CTA · REC marker</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">03</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Marquee ticker</span><span style="font-size: 13px; color: #4A463E;">Scroll-velocity driven, seamless loop</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">04</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Manifesto</span><span style="font-size: 13px; color: #4A463E;">Portrait slot + statement, 5/7 split</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">05</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Shop grid</span><span style="font-size: 13px; color: #4A463E;">6 products, offset anti-grid, name + ₱ price + Add</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">06</span><span style="font-weight: 700; font-size: 14px; width: 200px;">B-roll video strip</span><span style="font-size: 13px; color: #4A463E;">Dark looping video banner</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">07</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Outro statement</span><span style="font-size: 13px; color: #4A463E;">"Made for work. Kept for life." + ©26</span></div>
+      <div style="display: flex; gap: 14px; align-items: center; background: #FFFFFF; border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"><span style="font-family: monospace; font-size: 12px; color: #FF4000; width: 24px;">08</span><span style="font-weight: 700; font-size: 14px; width: 200px;">Footer</span><span style="font-size: 13px; color: #4A463E;">Dark · logo · newsletter · Shop / Support / Follow</span></div>
+    </div>
+  </section>
+
+  <div style="padding-top: 40px; margin-top: 32px; border-top: 2px solid #12100E; font-size: 12px; color: #8A8378; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+    <span>SASSi — A reliable product for the people that we rely on.</span>
+    <span>© 2026 · v1 spec</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
