@@ -32,7 +32,7 @@ bodyClass: template-product
         {%- assign parts = m | split: "|" -%}
         {%- assign src = parts[0] -%}
         {%- unless src contains "." -%}{%- assign src = src | append: ".png" -%}{%- endunless -%}
-        <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" data-full="/assets/images/{{ src }}" aria-label="View {{ parts[1] }}"><img src="/assets/images/{{ src }}" alt="{{ parts[1] }}" loading="lazy"></button>
+        <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="View {{ parts[1] }}"><img src="/assets/images/{{ src }}" alt="{{ parts[1] }}" loading="lazy"></button>
       {%- endfor -%}
     </div>
   </div>

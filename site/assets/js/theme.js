@@ -140,7 +140,10 @@
       current = index;
       thumbs.forEach(function (t, i) { t.classList.toggle("is-active", i === index); });
       dots.forEach(function (d, i) { d.classList.toggle("is-active", i === index); });
-      var full = thumbs[index] && thumbs[index].getAttribute("data-full");
+      // read the thumb's own <img> src (path-prefix aware) rather than a custom
+      // data-full attribute the HtmlBase plugin doesn't rewrite
+      var timg = thumbs[index] && thumbs[index].querySelector("img");
+      var full = timg && (timg.getAttribute("src") || timg.src);
       if (full && mainImg) { mainImg.src = full; }
       // auto-scroll the strip so the active thumb is centred in view
       if (strip && thumbs[index]) {
