@@ -1,0 +1,40 @@
+<footer class="site-footer" data-section="footer" data-section-theme="dark">
+  <div class="site-footer__top">
+    <div class="site-footer__join">
+      <h2 class="site-footer__join-title">Join SASSi</h2>
+      <p class="site-footer__join-copy">Never miss a chance to know the next drop, and exclusive discounts at SASSi.</p>
+      <form class="site-footer__form" action="#" method="post" onsubmit="return false">
+        <input class="site-footer__input" type="email" name="email" placeholder="Email for the next drop" aria-label="Email for the next drop">
+        {% render "snippets/button", label: "Notify Me", style: "light" %}
+      </form>
+    </div>
+    <div class="site-footer__links">
+      <div class="site-footer__col">
+        <h3>About</h3>
+        <ul>
+          {%- for link in site.footer.about -%}
+            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+      <div class="site-footer__col">
+        <h3>Shop</h3>
+        <ul>
+          {%- for link in site.footer.shop -%}
+            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+      <div class="site-footer__col">
+        <h3>Support</h3>
+        <ul>
+          {%- for link in site.footer.support -%}
+            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="site-footer__closer" data-closer>Designed for You to&nbsp;<span class="text-brand">Carry&nbsp;On.</span></p>
+  <p class="site-footer__copyright">{{ site.copyright }}</p>
+</footer>

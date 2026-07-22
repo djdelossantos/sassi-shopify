@@ -1,0 +1,18 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "eleventy",
+    "dev": "eleventy --serve --port=8080"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.6",
+    "playwright-core": "^1.61.1"
+  }
+}

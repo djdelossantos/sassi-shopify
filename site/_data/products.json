@@ -1,0 +1,34 @@
+[
+  {
+    "handle": "artemis-army-green-tote-l",
+    "title": "Artemis Army Green Tote L",
+    "price": 2890,
+    "image": "/assets/images/product-artemis@2x.png",
+    "url": "/products/atreus-backpack/",
+    "swatches": ["black", "olive", "crimson", "bronze"]
+  },
+  {
+    "handle": "athena-beige-handbag",
+    "title": "Athena Beige Handbag",
+    "price": 3290,
+    "image": "/assets/images/product-athena@2x.png",
+    "url": "/products/atreus-backpack/",
+    "swatches": ["black", "olive", "crimson", "bronze"]
+  },
+  {
+    "handle": "apollo-gray-tote-xl",
+    "title": "Apollo Gray Tote XL",
+    "price": 2890,
+    "image": "/assets/images/product-apollo@2x.png",
+    "url": "/products/atreus-backpack/",
+    "swatches": ["black", "grey"]
+  },
+  {
+    "handle": "atreus-black-backpack",
+    "title": "Atreus Black Backpack",
+    "price": 3990,
+    "image": "/assets/images/product-atreus@2x.png",
+    "url": "/products/atreus-backpack/",
+    "swatches": ["black", "grey", "bronze"]
+  }
+]

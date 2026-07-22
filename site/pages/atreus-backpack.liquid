@@ -1,0 +1,78 @@
+---
+layout: layout.liquid
+title: Atreus Backpack
+permalink: /products/atreus-backpack/
+bodyClass: template-product
+---
+<section class="pdp" data-section="pdp" data-section-theme="light">
+  {%- comment -%}
+    Gallery is a vertical stack of media items. On desktop each fills the
+    viewport and scrolls past the sticky info column; on mobile the first is
+    the main image and the rest become the tappable thumbnail strip.
+  {%- endcomment -%}
+  {%- assign media = "product-atreus@2x|Atreus Backpack,pdp-thumb-inside.jpg|Interior view,pdp-thumb-grey.jpg|Colour comparison,pdp-thumb-strap.jpg|Chest strap detail" | split: "," -%}
+  <div class="pdp__gallery" data-gallery data-media-count="{{ media | size }}">
+    <div class="pdp__media">
+      {%- for m in media -%}
+        {%- assign parts = m | split: "|" -%}
+        {%- assign src = parts[0] -%}
+        {%- unless src contains "." -%}{%- assign src = src | append: ".png" -%}{%- endunless -%}
+        <div class="pdp__media-item{% if forloop.first %} is-main{% endif %}"{% if forloop.first %} data-gallery-main{% endif %}>
+          <img src="/assets/images/{{ src }}" alt="{{ parts[1] }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
+        </div>
+      {%- endfor -%}
+      <div class="pdp__dots" data-gallery-dots aria-hidden="true">
+        {%- for m in media -%}
+          <span class="pdp__dot{% if forloop.first %} is-active{% endif %}"></span>
+        {%- endfor -%}
+      </div>
+    </div>
+    <div class="pdp__thumbs" data-gallery-thumbs>
+      {%- for m in media -%}
+        {%- assign parts = m | split: "|" -%}
+        {%- assign src = parts[0] -%}
+        {%- unless src contains "." -%}{%- assign src = src | append: ".png" -%}{%- endunless -%}
+        <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" data-full="/assets/images/{{ src }}" aria-label="View {{ parts[1] }}"><img src="/assets/images/{{ src }}" alt="{{ parts[1] }}" loading="lazy"></button>
+      {%- endfor -%}
+    </div>
+  </div>
+
+  <div class="pdp__info">
+    <h1 class="pdp__title">Atreus Backpack</h1>
+    <p class="pdp__price">{{ 3990 | money }}</p>
+    <div class="pdp__color">
+      <p>Color: <strong>Black</strong></p>
+      <div class="pdp__swatches" role="radiogroup" aria-label="Colour">
+        <button class="swatch swatch--black is-active" aria-label="Black" role="radio" aria-checked="true"></button>
+        <button class="swatch swatch--grey" aria-label="Grey" role="radio" aria-checked="false"></button>
+        <button class="swatch swatch--bronze" aria-label="Bronze" role="radio" aria-checked="false"></button>
+      </div>
+    </div>
+    <div class="pdp__buy">
+      <div class="qty" data-qty>
+        <button class="qty__btn" data-qty-minus aria-label="Decrease quantity">{% render "snippets/icon", name: "minus" %}</button>
+        <span class="qty__value" data-qty-value>1</span>
+        <button class="qty__btn" data-qty-plus aria-label="Increase quantity">{% render "snippets/icon", name: "plus" %}</button>
+      </div>
+      {% render "snippets/button", label: "Add to bag", style: "dark", extra_class: "pdp__add" %}
+    </div>
+    <p class="pdp__blurb">Water-repellent nylon shell. Rain lands, rain rolls off. The top flap secures with dual buckle locks to shield your main items, while a coated waterproof zipper underneath keeps your lower pocket completely dry.</p>
+
+    <div class="pdp__accordions">
+      <details class="accordion">
+        <summary>Details &amp; Specifications {% render "snippets/icon", name: "plus" %}</summary>
+        <div class="accordion__body">
+          <p>Water-repellent nylon shell. Padded 15" laptop sleeve. Quick-access front pocket. Reinforced base. 20L capacity.</p>
+        </div>
+      </details>
+      <details class="accordion">
+        <summary>Shipping, Returns &amp; Warranty {% render "snippets/icon", name: "plus" %}</summary>
+        <div class="accordion__body">
+          <p>Free shipping over ₱2,500. 30-day returns. 2-year warranty against manufacturing defects.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+{% render "sections/product-grid", heading: "You might also like", products: products, hide_link: true %}

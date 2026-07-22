@@ -1,0 +1,18 @@
+{%- comment -%} Category showcase. Param: show_buttons (true on PDP) {%- endcomment -%}
+<section class="categories" data-section="categories" data-section-theme="light">
+  {%- assign cards = "Backpacks|Built for the daily grind. Protective and weather-ready.|cat-backpacks;;Totes|Everyday utility, simplified. Spacious storage for your routine.|cat-totes;;Handbags|Compact and organized. Quick-access pockets for daily essentials.|cat-handbags" | split: ";;" -%}
+  {%- for card in cards -%}
+    {%- assign parts = card | split: "|" -%}
+    <article class="category-card reveal">
+      <div class="category-card__image" data-section-theme="dark">
+        <img src="/assets/images/{{ parts[2] }}@2x.png" alt="{{ parts[0] }}" loading="lazy">
+        <span class="noise" aria-hidden="true"></span>
+      </div>
+      <h3 class="category-card__title">{{ parts[0] }}</h3>
+      <p class="category-card__copy">{{ parts[1] }}</p>
+      {%- if show_buttons -%}
+        {% render "snippets/button", label: "Learn More", style: "outline", href: "/#new-arrivals" %}
+      {%- endif -%}
+    </article>
+  {%- endfor -%}
+</section>

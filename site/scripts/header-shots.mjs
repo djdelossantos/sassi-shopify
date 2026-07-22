@@ -1,0 +1,12 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch({ channel: "chrome", headless: true });
+const ctx = await b.newContext({ viewport: { width: 1440, height: 620 }, reducedMotion: "reduce" });
+const p = await ctx.newPage();
+await p.goto("http://localhost:8080/", { waitUntil: "load" });
+await p.waitForTimeout(900);
+await p.screenshot({ path: "qa/header-on-dark.png" });
+await p.evaluate(() => window.scrollTo(0, 1900));
+await p.waitForTimeout(700);
+await p.screenshot({ path: "qa/header-on-light.png" });
+console.log("ok");
+await b.close();

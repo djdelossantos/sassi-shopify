@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sassi-site",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["@11ty/eleventy", "--serve", "--port=8080"],
+      "cwd": "site",
+      "port": 8080
+    }
+  ]
+}

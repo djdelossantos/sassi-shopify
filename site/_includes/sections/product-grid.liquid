@@ -1,0 +1,14 @@
+{%- comment -%} Product grid. Params: heading (string), products (array), hide_link (bool) {%- endcomment -%}
+<section class="product-grid" id="new-arrivals" data-section="product-grid" data-section-theme="light">
+  <div class="product-grid__head">
+    <h2 class="product-grid__heading">{{ heading | default: "New Arrivals" }}</h2>
+    {%- unless hide_link -%}
+      <a class="product-grid__link" href="/#new-arrivals">Shop now →</a>
+    {%- endunless -%}
+  </div>
+  <div class="product-grid__items">
+    {%- for product in products -%}
+      {% render "snippets/product-card", product: product %}
+    {%- endfor -%}
+  </div>
+</section>

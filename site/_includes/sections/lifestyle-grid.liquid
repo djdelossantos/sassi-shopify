@@ -1,0 +1,15 @@
+<section class="lifestyle" data-section="lifestyle" data-section-theme="dark">
+  {%- assign tiles = "Work|Streamlined style for the daily grind.<br>Keeps your work essentials perfectly arranged.|life-work;;Tech|Secure padding for your mobile office.<br>Guards laptops and cables from bumps.|life-tech;;Active|Lightweight resilience for life in motion.<br>Transitions easily from workouts to city streets.|life-active;;Utility|Heavy-duty storage that works harder.<br>Reinforced details handle your toughest loads.|life-utility;;Travel|Travel-ready design for smooth transit.<br>Includes intuitive layouts for hassle-free miles.|life-travel;;Lifestyle|Effortless versatility for your daily routine.<br>Adapts to your changing schedule instantly.|life-lifestyle" | split: ";;" -%}
+  {%- for tile in tiles -%}
+    {%- assign parts = tile | split: "|" -%}
+    <article class="lifestyle-tile reveal">
+      <img src="/assets/images/{{ parts[2] }}@2x.png" alt="{{ parts[0] }}" loading="lazy">
+      <span class="lifestyle-tile__scrim" aria-hidden="true"></span>
+      <span class="noise" aria-hidden="true"></span>
+      <div class="lifestyle-tile__text">
+        <h3>{{ parts[0] }}</h3>
+        <p>{{ parts[1] }}</p>
+      </div>
+    </article>
+  {%- endfor -%}
+</section>

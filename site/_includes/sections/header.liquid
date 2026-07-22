@@ -1,0 +1,28 @@
+<header class="site-header" data-header>
+  <div class="site-header__inner">
+    <div class="site-header__left">
+      <button class="site-header__burger" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
+        <span class="site-header__burger-open">{% render "snippets/icon", name: "menu" %}</span>
+        <span class="site-header__burger-close">{% render "snippets/icon", name: "close" %}</span>
+      </button>
+      <nav class="site-header__nav" aria-label="Main">
+        <a href="/">Shop</a>
+        <a href="/#brand">The Brand</a>
+      </nav>
+    </div>
+    <a class="site-header__logo" href="/" aria-label="SASSi home">
+      <span class="site-header__logo-mark" role="img" aria-label="SASSi"></span>
+    </a>
+    <div class="site-header__icons">
+      <a href="#" aria-label="Search">{% render "snippets/icon", name: "search" %}</a>
+      <a href="#" aria-label="Account" class="site-header__account">{% render "snippets/icon", name: "account" %}</a>
+      <a href="#" aria-label="Bag">{% render "snippets/icon", name: "bag" %}</a>
+    </div>
+  </div>
+  <nav class="site-header__drawer" id="mobile-menu" aria-label="Mobile">
+    <a href="/">Shop</a>
+    <a href="/#brand">The Brand</a>
+    <a href="#">Account</a>
+    <p class="site-header__drawer-copyright">{{ site.copyright }}</p>
+  </nav>
+</header>

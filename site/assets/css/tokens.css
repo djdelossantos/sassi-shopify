@@ -1,0 +1,96 @@
+/* ==========================================================================
+   SASSi Design Tokens
+   Generated from Figma variables (file Z2VJB0nDHWWDAYAp3GqTlx).
+   Names match the WEB code syntax set on each Figma variable — keep in sync.
+   ========================================================================== */
+
+:root {
+  /* ---- Colour primitives (collection: SASSi Shopify Website) ---- */
+  --color-white-100: #ffffff;
+  --color-white-85: rgba(255, 255, 255, 0.85);
+  --color-obsidian-black-100: #12100e;
+  --color-sassi-red-100: #ff4000;
+  --color-bronze-100: #a97541;
+  --color-bronze-75: #8b7153;
+  --color-bronze-60: #907c66;
+  --color-neutral-grey-20: #f3f3f3;
+  --color-neutral-grey-25: #f2f2f2;
+  --color-neutral-grey-35: #cecece;
+  --color-neutral-grey-50: #757575;
+  --color-neutral-grey-75: #6b6b6b;
+  --color-neutral-grey-85: #666666;
+  --color-neutral-grey-100: #4a4a4a;
+  --color-crimson-100: #b41532;
+  --color-olive-100: #59603e;
+  --color-true-black-100: #000000;
+  --color-timberwolf: #d9d6ce; /* library var "Vivid Red/83" — name is wrong, value is right */
+
+  /* ---- Semantic colours (collection: SASSi Semantic) ---- */
+  --color-bg-primary: var(--color-white-100);
+  --color-bg-inverse: var(--color-obsidian-black-100);
+  --color-bg-brand: var(--color-sassi-red-100);
+  --color-bg-subtle: var(--color-neutral-grey-25);
+  --color-text-primary: var(--color-obsidian-black-100);
+  --color-text-secondary: var(--color-neutral-grey-100);
+  --color-text-muted: var(--color-neutral-grey-50);
+  --color-text-on-brand: var(--color-white-100);
+  --color-text-on-inverse: var(--color-white-100);
+  --color-border-default: var(--color-neutral-grey-50);
+  --color-border-subtle: var(--color-neutral-grey-25);
+  --color-accent-bronze: var(--color-bronze-100);
+
+  /* ---- Spacing & radius scale ---- */
+  --space-0: 0px;
+  --space-8: 8px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;
+  --space-64: 64px;
+  --space-72: 72px;
+  --space-80: 80px;
+
+  /* ---- Font family ---- */
+  --font-family-primary: "Open Sauce Two", "Inter", system-ui, sans-serif;
+
+  /* ---- Font sizes ---- */
+  --font-size-10: 10px;
+  --font-size-12: 12px;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-24: 24px;
+  --font-size-32: 32px;
+  --font-size-48: 48px;
+  --font-size-56: 56px;
+  --font-size-64: 64px;
+  --font-size-72: 72px;
+  --font-size-80: 80px;
+  --font-size-163-5: 163.5px;
+
+  /* ---- Font weights ---- */
+  --font-weight-400: 400;
+  --font-weight-600: 600;
+  --font-weight-700: 700;
+  --font-weight-800: 800;
+  --font-weight-900: 900;
+
+  /* ---- Letter spacing (px values; Figma names carry the same numbers) ---- */
+  --letter-spacing-0-96: 0.96px;
+  --letter-spacing-0-72: 0.72px;
+  --letter-spacing-0-26: 0.26px;
+  --letter-spacing-0-13: 0.13px;
+  --letter-spacing-0: 0px;
+  --letter-spacing-neg-0-3: -0.3px;
+  --letter-spacing-neg-0-98: -0.98px;
+  --letter-spacing-neg-1-15: -1.152px;
+  --letter-spacing-neg-2-33: -2.333px;
+  --letter-spacing-neg-6-34: -6.336px;
+
+  /* ---- Mobile semantic type (Figma: Mobile/Semantic/*) ---- */
+  --type-mobile-hero-size: 44px;
+  --type-mobile-heading2-size: 40px;
+  --type-mobile-body-size: 14px;
+}

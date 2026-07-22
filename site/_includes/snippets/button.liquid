@@ -1,0 +1,11 @@
+{%- comment -%}
+  SASSi Button — mirrors Figma component 391:266.
+  Params: label (string), style ("dark" | "light" | "outline"), href (string, optional),
+          extra_class (string, optional)
+{%- endcomment -%}
+{%- assign tag = "button" -%}
+{%- if href -%}{%- assign tag = "a" -%}{%- endif -%}
+<{{ tag }}{% if href %} href="{{ href }}"{% endif %} class="btn btn--{{ style | default: 'dark' }} {{ extra_class }}">
+  <span class="btn__label">{{ label }}</span>
+  {% render "snippets/icon", name: "arrow-up-right" %}
+</{{ tag }}>

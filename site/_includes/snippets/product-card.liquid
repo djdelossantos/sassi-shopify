@@ -1,0 +1,17 @@
+{%- comment -%} Product card — image, title, then price left / swatch dots right. Params: product {%- endcomment -%}
+<a class="product-card reveal" href="{{ product.url }}">
+  <div class="product-card__image">
+    <img src="{{ product.image }}" alt="{{ product.title }}" loading="lazy">
+  </div>
+  <div class="product-card__meta">
+    <p class="product-card__title">{{ product.title }}</p>
+    <div class="product-card__info">
+      <p class="product-card__price">{{ product.price | money }}</p>
+      {%- if product.swatches -%}
+        <span class="product-card__swatches">
+          {%- for c in product.swatches -%}<span class="dot dot--{{ c }}"></span>{%- endfor -%}
+        </span>
+      {%- endif -%}
+    </div>
+  </div>
+</a>
