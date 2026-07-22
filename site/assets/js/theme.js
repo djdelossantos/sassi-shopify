@@ -131,6 +131,8 @@
   var gallery = document.querySelector("[data-gallery]");
   if (gallery) {
     var mainImg = gallery.querySelector("[data-gallery-main] img");
+    var mediaImages = [].slice.call(gallery.querySelectorAll(".pdp__media-item img"));
+    var fullSources = mediaImages.map(function (img) { return img.getAttribute("src") || img.src; });
     var strip = gallery.querySelector("[data-gallery-thumbs]");
     var thumbs = [].slice.call(gallery.querySelectorAll(".pdp__thumb"));
     var dots = [].slice.call(gallery.querySelectorAll(".pdp__dot"));
@@ -140,10 +142,9 @@
       current = index;
       thumbs.forEach(function (t, i) { t.classList.toggle("is-active", i === index); });
       dots.forEach(function (d, i) { d.classList.toggle("is-active", i === index); });
-      // read the thumb's own <img> src (path-prefix aware) rather than a custom
-      // data-full attribute the HtmlBase plugin doesn't rewrite
-      var timg = thumbs[index] && thumbs[index].querySelector("img");
-      var full = timg && (timg.getAttribute("src") || timg.src);
+      // Read the matching full-size gallery image. Its standard src is
+      // path-prefix aware; the thumbnail itself remains a lightweight asset.
+      var full = fullSources[index];
       if (full && mainImg) { mainImg.src = full; }
       // auto-scroll the strip so the active thumb is centred in view
       if (strip && thumbs[index]) {

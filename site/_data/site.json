@@ -2,7 +2,7 @@
   "name": "SASSi",
   "tagline": "Designed for You to Carry On.",
   "nav": [
-    { "label": "Shop", "url": "/#new-arrivals" },
+    { "label": "Shop", "url": "/shop/" },
     { "label": "The Brand", "url": "/#brand" }
   ],
   "footer": {
@@ -11,10 +11,10 @@
       { "label": "Contact", "url": "#" }
     ],
     "shop": [
-      { "label": "Shop All", "url": "/#new-arrivals" },
-      { "label": "Backpacks", "url": "#" },
-      { "label": "Totes", "url": "#" },
-      { "label": "Handbags", "url": "#" }
+      { "label": "Shop All", "url": "/shop/" },
+      { "label": "Backpacks", "url": "/shop/" },
+      { "label": "Totes", "url": "/shop/" },
+      { "label": "Handbags", "url": "/shop/" }
     ],
     "support": [
       { "label": "Shipping & Returns", "url": "#" },

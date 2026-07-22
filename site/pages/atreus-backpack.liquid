@@ -10,7 +10,7 @@ bodyClass: template-product
     viewport and scrolls past the sticky info column; on mobile the first is
     the main image and the rest become the tappable thumbnail strip.
   {%- endcomment -%}
-  {%- assign media = "product-atreus@2x|Atreus Backpack,pdp-thumb-inside.jpg|Interior view,pdp-thumb-grey.jpg|Colour comparison,pdp-thumb-strap.jpg|Chest strap detail" | split: "," -%}
+  {%- assign media = "product-atreus-black-main@2x.png|thumb-atreus-black-main.png|Atreus Black Backpack,product-atreus-black-lock@2x.png|thumb-atreus-black-lock.png|Atreus buckle detail,product-atreus-inside@2x.png|thumb-atreus-inside.png|Atreus interior compartments,product-atreus-black-laptop-strap@2x.png|thumb-atreus-black-laptop-strap.png|Atreus laptop retention strap" | split: "," -%}
   <div class="pdp__gallery" data-gallery data-media-count="{{ media | size }}">
     <div class="pdp__media">
       {%- for m in media -%}
@@ -18,7 +18,7 @@ bodyClass: template-product
         {%- assign src = parts[0] -%}
         {%- unless src contains "." -%}{%- assign src = src | append: ".png" -%}{%- endunless -%}
         <div class="pdp__media-item{% if forloop.first %} is-main{% endif %}"{% if forloop.first %} data-gallery-main{% endif %}>
-          <img src="/assets/images/{{ src }}" alt="{{ parts[1] }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
+          <img src="/assets/images/{{ src }}" alt="{{ parts[2] }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
         </div>
       {%- endfor -%}
       <div class="pdp__dots" data-gallery-dots aria-hidden="true">
@@ -30,9 +30,8 @@ bodyClass: template-product
     <div class="pdp__thumbs" data-gallery-thumbs>
       {%- for m in media -%}
         {%- assign parts = m | split: "|" -%}
-        {%- assign src = parts[0] -%}
-        {%- unless src contains "." -%}{%- assign src = src | append: ".png" -%}{%- endunless -%}
-        <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="View {{ parts[1] }}"><img src="/assets/images/{{ src }}" alt="{{ parts[1] }}" loading="lazy"></button>
+        {%- assign thumb_src = parts[1] -%}
+        <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="View {{ parts[2] }}"><img src="/assets/images/{{ thumb_src }}" alt="{{ parts[2] }}" loading="lazy"></button>
       {%- endfor -%}
     </div>
   </div>
