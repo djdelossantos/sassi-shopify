@@ -278,8 +278,25 @@
     }
   }
 
+  // Lifestyle tiles reveal one card at a time within each responsive row.
+  var lifestyleTiles = gsap.utils.toArray(".lifestyle-tile.reveal");
+  if (lifestyleTiles.length) {
+    var lifestyleRows = function (columns) {
+      for (var i = 0; i < lifestyleTiles.length; i += columns) {
+        var row = lifestyleTiles.slice(i, i + columns);
+        gsap.to(row, {
+          opacity: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.18,
+          scrollTrigger: { trigger: row[0], start: "top 88%" }
+        });
+      }
+    };
+    var lifestyleMedia = gsap.matchMedia();
+    lifestyleMedia.add("(min-width: 900px)", function () { lifestyleRows(3); });
+    lifestyleMedia.add("(max-width: 899px)", function () { lifestyleRows(2); });
+  }
+
   // Generic reveal-on-scroll
-  document.querySelectorAll(".reveal").forEach(function (el) {
+  document.querySelectorAll(".reveal:not(.lifestyle-tile)").forEach(function (el) {
     gsap.to(el, {
       opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
       scrollTrigger: { trigger: el, start: "top 88%" }

@@ -442,10 +442,9 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
     height: 100vh; min-height: 700px;
   }
   .lifestyle-tile { aspect-ratio: auto; height: auto; }
-  /* desktop: title top-left, copy bottom-left */
-  .lifestyle-tile__text { padding: var(--space-16); justify-content: space-between; }
+  .lifestyle-tile__text { padding: var(--space-24); justify-content: end; }
   .lifestyle-tile__text h3 { font-size: var(--font-size-24); }
-  .lifestyle-tile__text p { display: block; font-size: var(--font-size-14); letter-spacing: 0.02em; }
+  .lifestyle-tile__text p { display: block; font-size: var(--font-size-14); letter-spacing: 0.02em; line-height: 1.6; }
 
   .black-series { height: 100vh; min-height: 700px; }
   .black-series__head { top: var(--space-72); gap: var(--space-16); }
