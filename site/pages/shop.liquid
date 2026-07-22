@@ -1,0 +1,60 @@
+---
+layout: layout.liquid
+title: Shop All
+permalink: /shop/
+bodyClass: template-shop
+---
+{%- comment -%}
+  Shop All — product listing. Reuses the product-card snippet and the button
+  snippet from the PDP/landing. Products are repeated as placeholders; real
+  collection data + filter contents come from Shopify later.
+  Placeholder types are assigned round-robin so the type tabs can be wired now.
+{%- endcomment -%}
+{%- assign types = "backpacks,totes,handbags" | split: "," -%}
+{%- assign passes = 4 -%}
+{%- assign total_count = products | size | times: passes -%}
+<section class="shop" data-section-theme="light">
+  <div class="shop__label">
+    <div class="shop__head">
+      <h1 class="shop__title">Shop All</h1>
+      <p class="shop__count" data-shop-count>{{ total_count }} products</p>
+    </div>
+    <div class="shop__toolbar">
+      <div class="shop__types" role="tablist" aria-label="Product type" data-shop-types>
+        <button class="shop__type is-active" role="tab" aria-selected="true" data-type="all">All Bags</button>
+        <button class="shop__type" role="tab" aria-selected="false" data-type="backpacks">Backpacks</button>
+        <button class="shop__type" role="tab" aria-selected="false" data-type="totes">Totes</button>
+        <button class="shop__type" role="tab" aria-selected="false" data-type="handbags">Handbags</button>
+      </div>
+      <button class="shop__filters" data-filters-toggle aria-expanded="false">
+        <span>Filters</span>
+        {% render "snippets/icon", name: "adjust" %}
+      </button>
+    </div>
+  </div>
+
+  {%- comment -%} Placeholder filter panel — contents supplied later {%- endcomment -%}
+  <div class="shop__filter-panel" data-filter-panel hidden>
+    <p class="shop__filter-note">Filters coming soon.</p>
+  </div>
+
+  <div class="shop__grid" data-shop-grid>
+    {%- comment -%} repeat the catalogue a few times as placeholders {%- endcomment -%}
+    {%- assign page_size = 8 -%}
+    {%- assign card_index = 0 -%}
+    {%- for pass in (1..passes) -%}
+      {%- for product in products -%}
+        {%- assign type_idx = card_index | modulo: 3 -%}
+        {%- assign ptype = types[type_idx] -%}
+        <div class="shop__cell" data-type="{{ ptype }}"{% if card_index >= page_size %} data-hidden hidden{% endif %}>
+          {% render "snippets/product-card", product: product %}
+        </div>
+        {%- assign card_index = card_index | plus: 1 -%}
+      {%- endfor -%}
+    {%- endfor -%}
+  </div>
+
+  <div class="shop__loadmore" data-loadmore-wrap>
+    {% render "snippets/button", label: "Load More", style: "dark", extra_class: "shop__loadmore-btn" %}
+  </div>
+</section>

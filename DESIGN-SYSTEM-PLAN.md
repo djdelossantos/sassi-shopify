@@ -167,6 +167,52 @@ Two of these are near-misses against styles that already exist — the hero is 1
 a 160px style, and "Carry On." matches `Heading 2 upper/48` exactly. Applying the existing
 styles would fix those two immediately; the other six need styles created.
 
+### SHOP PAGE RECONCILED TO FIGMA 2026-07-22 (uncommitted)
+
+Compared built `shop.liquid` against Figma `Shop - 1440px` (node `507:355`, file
+`Z2VJB0nDHWWDAYAp3GqTlx`) via get_design_context on toolbar `507:746`. Only a
+DESKTOP shop design exists (no mobile frame). Adjusted to match: title row =
+"Shop All" (24px Bold/700) + right-aligned "N products" count (14px, secondary);
+type tabs are PLAIN TEXT 16px, active = brand red #FF4000 (not pills); Filters =
+text + sliders "adjust" icon (added to icon snippet), borderless, 10px gap;
+Load More = DARK button; grid full-bleed 4-col, 24px row / 16px col gap, toolbar
+inset 16px, `.shop__label` desktop padding-top 120px to clear overlay header.
+Deviations kept on purpose: count shows real placeholder count (16=4×4) not
+Figma's mock "19"; secondary stays #4A4A4A per the sitewide override (Figma uses
+#6B6B6B). Verified desktop matches; mobile is a sensible 2-col fallback until a
+mobile Shop is designed.
+
+Uncommitted files: shop.liquid (new), icon.liquid (adjust icon), theme.css
+(shop block rewrite), theme.js (shop logic — from prior turn), DESIGN-SYSTEM-PLAN.md.
+
+### SHOP PAGE + PAGES DEPLOY 2026-07-22 (earlier; deploy committed 080ae6a)
+
+**Shop page** `site/pages/shop.liquid` → `/shop/`. Based on PDP patterns, reuses
+`snippets/product-card` and `snippets/button`. "Shop All" heading, type tabs
+(All Bags / Backpacks / Totes / Handbags), a placeholder Filters toggle+panel
+(contents TBD from user), and a Load More button. 16 placeholder cards = the 4
+`products.json` items repeated ×4, with types assigned round-robin
+(`modulo` — note: Liquid can't filter inside an array subscript, must assign the
+index to a var first). JS in `theme.js` (search "Shop page:") handles tab filter,
+filters toggle, and Load More (page size 8; button auto-hides when exhausted via
+`[data-exhausted]`; paging resets on tab change). CSS at end of `theme.css`
+("Shop All page"). Verified: tabs filter correctly, Load More reveals+exhausts,
+mobile 2-col / desktop 4-col. NOT yet reconciled against the Figma Shop design
+(Figma MCP was disconnected) — do that when reconnected.
+
+**GitHub Pages deploy is LIVE via Actions** (committed `080ae6a`, pushed):
+`.github/workflows/deploy.yml` builds `site/` with
+`npx @11ty/eleventy --pathprefix=/sassi-shopify/` and deploys `_site` to Pages on
+every push to master. `eleventy.config.js` uses `EleventyHtmlBasePlugin` +
+`pathPrefix: "/"` (default) so absolute `/assets` paths work at root locally and
+under `/sassi-shopify/` on Pages. **User must set repo Settings → Pages → Source →
+"GitHub Actions" once** for it to publish (was "Deploy from a branch"). URL:
+https://djdelossantos.github.io/sassi-shopify/ . Local Git-Bash mangles
+`--pathprefix=/...` (MSYS pathconv) — use `MSYS_NO_PATHCONV=1` locally; Linux CI is fine.
+
+Known: favicon 404 on all pages (no favicon added yet). Video/PNGs committed
+directly (~48MB) — consider Git LFS or WebP before scaling.
+
 ### INTERMEDIATE WEBSITE BUILT 2026-07-20 — `site/`
 
 Eleventy 3 + Liquid static site in `site/`, Shopify-shaped for cheap conversion:

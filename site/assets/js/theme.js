@@ -187,6 +187,67 @@
     });
   });
 
+  // Shop page: type tabs, filters toggle, Load More (placeholder behaviour;
+  // real filtering/pagination comes from Shopify collection data later).
+  var shopGrid = document.querySelector("[data-shop-grid]");
+  if (shopGrid) {
+    var cells = [].slice.call(shopGrid.querySelectorAll(".shop__cell"));
+    var pageSize = 8;
+    var activeType = "all";
+
+    var apply = function () {
+      var shown = 0;
+      cells.forEach(function (cell) {
+        var matches = activeType === "all" || cell.getAttribute("data-type") === activeType;
+        // reveal up to (visibleCount) matching cells; hide the rest
+        if (matches && shown < visibleCount) { cell.hidden = false; shown++; }
+        else { cell.hidden = true; }
+      });
+      var totalMatching = cells.filter(function (c) {
+        return activeType === "all" || c.getAttribute("data-type") === activeType;
+      }).length;
+      var wrap = document.querySelector("[data-loadmore-wrap]");
+      if (wrap) { wrap.toggleAttribute("data-exhausted", visibleCount >= totalMatching); }
+    };
+
+    var visibleCount = pageSize;
+
+    var types = document.querySelector("[data-shop-types]");
+    if (types) {
+      types.querySelectorAll(".shop__type").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          types.querySelectorAll(".shop__type").forEach(function (t) {
+            t.classList.remove("is-active"); t.setAttribute("aria-selected", "false");
+          });
+          tab.classList.add("is-active"); tab.setAttribute("aria-selected", "true");
+          activeType = tab.getAttribute("data-type");
+          visibleCount = pageSize; // reset paging on filter change
+          apply();
+        });
+      });
+    }
+
+    var filtersToggle = document.querySelector("[data-filters-toggle]");
+    var filterPanel = document.querySelector("[data-filter-panel]");
+    if (filtersToggle && filterPanel) {
+      filtersToggle.addEventListener("click", function () {
+        var open = filterPanel.hasAttribute("hidden");
+        filterPanel.toggleAttribute("hidden", !open);
+        filtersToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
+
+    var loadMoreBtn = document.querySelector(".shop__loadmore-btn");
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener("click", function () {
+        visibleCount += pageSize;
+        apply();
+      });
+    }
+
+    apply();
+  }
+
   /* ---------- Motion layer ---------- */
   if (reducedMotion) { return; }
   if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") { return; }

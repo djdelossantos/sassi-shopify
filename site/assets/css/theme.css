@@ -513,6 +513,47 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   /* buy controls stay stacked full-width at all sizes, per design v2 */
 }
 
+/* ==========================================================================
+   Shop All page — reuses .product-card; toolbar (type tabs + filters),
+   placeholder filter panel, product grid, Load More.
+   ========================================================================== */
+/* Label block (title row + toolbar) — inset 16px; product grid is full-bleed */
+.shop { padding-bottom: var(--space-48); }
+.shop__label { display: flex; flex-direction: column; gap: var(--space-24); padding: var(--space-16); }
+.shop__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-16); }
+.shop__title { font-size: var(--font-size-24); font-weight: var(--font-weight-700); line-height: 1; }
+.shop__count { font-size: var(--font-size-14); color: var(--color-text-secondary); letter-spacing: 0.02em; line-height: 1.4; white-space: nowrap; }
+.shop__toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-16); }
+/* plain-text type tabs; active is brand red */
+.shop__types { display: flex; gap: var(--space-16); overflow-x: auto; scrollbar-width: none; }
+.shop__types::-webkit-scrollbar { display: none; }
+.shop__type {
+  flex: 0 0 auto; font-size: var(--font-size-16); color: var(--color-text-primary);
+  white-space: nowrap; transition: color 0.2s ease;
+}
+.shop__type.is-active { color: var(--color-bg-brand); }
+.shop__filters {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px;
+  font-size: var(--font-size-16); color: var(--color-text-primary);
+}
+.shop__filters .icon { width: 20px; height: 20px; }
+.shop__filter-panel { padding: var(--space-16); border-top: 1px solid var(--color-border-subtle); }
+.shop__filter-panel[hidden] { display: none; }
+.shop__filter-note { font-size: var(--font-size-14); color: var(--color-text-secondary); }
+.shop__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-24) 12px; padding: 0 var(--space-16); }
+.shop__cell[hidden] { display: none; }
+.shop__loadmore { display: flex; justify-content: center; padding-top: var(--space-32); }
+.shop__loadmore .btn { width: auto; min-width: 240px; }
+.shop__loadmore[data-exhausted] { display: none; }
+
+@media (min-width: 900px) {
+  .shop { padding-bottom: var(--space-64); }
+  .shop__label { padding: 120px var(--space-16) 0; } /* clears the overlay header */
+  .shop__title { font-size: var(--font-size-24); }
+  /* full-bleed product grid: 4 cols, 16px gutters, 24px rows */
+  .shop__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-24) var(--space-16); padding: var(--space-24) 0 0; }
+}
+
 /* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
