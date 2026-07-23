@@ -574,3 +574,39 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   html.has-gsap .reveal { opacity: 1; transform: none; }
 }
+
+/* ---- Page-transition intro ---- */
+/* A full-brand panel with the centred SASSi logo, used only for in-site link
+   transitions (see theme.js's client-side router). Hidden by default, so a
+   refresh or fresh visit shows no animation. On a link click JS reveals it,
+   grows it up from the bottom and wipes the logo in while the next page is
+   fetched, swaps <main> in behind it, then sweeps the panel up to reveal. */
+.page-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none; /* only shown by a click transition or on arrival */
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-brand);
+  pointer-events: none; /* never trap clicks */
+  will-change: clip-path;
+}
+.page-intro.is-done { display: none !important; }
+.page-intro__logo {
+  clip-path: inset(100% 0 0 0); /* hidden until wiped up from the bottom */
+  will-change: clip-path;
+}
+.page-intro__logo .logo {
+  display: block;
+  width: clamp(108px, 18vw, 160px);
+  height: auto;
+  color: var(--color-text-on-brand); /* white via currentColor */
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-intro { display: none !important; }
+}
+/* No JS / reduced motion: never show the panel at all. */
+@media (prefers-reduced-motion: reduce) {
+  .page-intro { display: none; }
+}

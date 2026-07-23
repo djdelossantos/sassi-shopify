@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body class="{{ bodyClass | default: '' }}">
+  <div class="page-intro" data-page-intro aria-hidden="true">
+    <div class="page-intro__logo">{% render "snippets/logo" %}</div>
+  </div>
   {% render "sections/header", site: site %}
   <main id="main">
     {{ content }}
