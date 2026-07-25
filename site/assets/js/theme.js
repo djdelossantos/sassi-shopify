@@ -11,8 +11,9 @@
   var docEl = document.documentElement;
 
   var intro = document.querySelector("[data-page-intro]");
-  var introLogo = intro && intro.querySelector(".page-intro__logo");
-  var canIntro = !reducedMotion && hasGsap && !!intro && !!introLogo;
+  var introLogo = intro && intro.querySelector(".page-intro__logo"); // mask window
+  var introMark = introLogo && introLogo.querySelector(".logo");      // the SVG that slides
+  var canIntro = !reducedMotion && hasGsap && !!intro && !!introMark;
 
   // Reassigned by the header-theme setup; called by Lenis + after each swap.
   var updateHeaderTheme = function () {};
@@ -341,18 +342,20 @@
   // never leave the document, so there is no navigation repaint (no flicker).
   if (canIntro) {
     var navigating = false;
+    var lightTurn = false; // alternates each transition; false = orange, true = white
     var currentPath = window.location.pathname;
     // We manage scroll ourselves; stop the browser restoring it under the cover.
     if ("scrollRestoration" in history) { history.scrollRestoration = "manual"; }
 
     var coverAnim = function () {
-      // Grow up from the bottom, THEN wipe the logo in, then a brief hold.
+      // Grow up from the bottom, THEN slide the logo up into its mask window
+      // (it rises in from below), then a brief hold.
       return new Promise(function (resolve) {
         gsap.timeline({ onComplete: resolve })
           .set(intro, { display: "flex", clipPath: "inset(100% 0% 0% 0%)" })
-          .set(introLogo, { clipPath: "inset(100% 0% 0% 0%)" })
+          .set(introMark, { yPercent: 110 })
           .to(intro, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.65, ease: "power2.inOut" })
-          .to(introLogo, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.6, ease: "power2.inOut" })
+          .to(introMark, { yPercent: 0, duration: 0.6, ease: "power3.out" })
           .to({}, { duration: 0.25 });
       });
     };
@@ -393,6 +396,9 @@
     var navigate = function (href, isPop) {
       if (navigating) { return; }
       navigating = true;
+      // Alternate the colour scheme each time (orange → white → orange …).
+      intro.classList.toggle("page-intro--light", lightTurn);
+      lightTurn = !lightTurn;
       intro.classList.remove("is-done");
       var fetchP = fetch(href, { credentials: "same-origin" }).then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }

@@ -189,7 +189,25 @@ main { padding-top: 0; }
   margin: var(--space-16) 0;
   background: var(--color-bg-subtle);
 }
-.black-series__media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.black-series__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Individual bags composited over the gray gradient as one overlapping row.
+   Every bag PNG shares the same canvas height with the bag sized proportionally
+   inside, so rendering them all at one height (--bag-h) gives correct relative
+   sizes. They sit on a shared baseline (align-items:flex-end) and overlap via
+   negative margins — the overlaps come from Figma, expressed as a fraction of
+   bag height so they scale. Left bags sit on top, as in the Figma composition. */
+.black-series__bags {
+  position: absolute; left: 0; right: 0; bottom: 18%; z-index: 1;
+  display: flex; justify-content: center; align-items: flex-end;
+  --bag-h: 32vw;
+}
+.black-series__bag { flex: none; height: var(--bag-h); width: auto; display: block; }
+/* left → right: Athena · Artemis · Atlas · Apollo (Figma overlaps ÷ 1235px frame) */
+.black-series__bag--athena  { z-index: 4; }
+.black-series__bag--artemis { z-index: 3; margin-left: calc(var(--bag-h) * -0.129); }
+.black-series__bag--atlas   { z-index: 2; margin-left: calc(var(--bag-h) * -0.169); }
+.black-series__bag--apollo  { z-index: 1; margin-left: calc(var(--bag-h) * -0.113); }
+.black-series__head, .black-series__cta { z-index: 2; }
 .black-series__head {
   position: absolute; top: var(--space-80); left: 0; right: 0;
   text-align: center; display: flex; flex-direction: column; gap: var(--space-8);
@@ -594,15 +612,20 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 }
 .page-intro.is-done { display: none !important; }
 .page-intro__logo {
-  clip-path: inset(100% 0 0 0); /* hidden until wiped up from the bottom */
-  will-change: clip-path;
+  overflow: hidden;  /* mask window — the logo slides down into it from above */
+  line-height: 0;
 }
 .page-intro__logo .logo {
   display: block;
   width: clamp(108px, 18vw, 160px);
   height: auto;
   color: var(--color-text-on-brand); /* white via currentColor */
+  will-change: transform;
 }
+/* Alternate variant: white panel, dark logo. The router toggles this class per
+   transition so the intro alternates between the brand orange and this one. */
+.page-intro--light { background: var(--color-bg-primary); }
+.page-intro--light .logo { color: var(--color-text-primary); }
 @media (prefers-reduced-motion: reduce) {
   .page-intro { display: none !important; }
 }
