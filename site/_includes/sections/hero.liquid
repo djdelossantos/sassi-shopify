@@ -1,7 +1,32 @@
+{%- comment -%}
+  Hero — supports 1..N media slides (image or video). One slide renders static;
+  multiple crossfade as a carousel (see theme.js initHeroCarousel). The `slides`
+  list below maps 1:1 to Shopify section blocks when this becomes a theme:
+  each entry is "type|src|poster" — type is "image" or "video".
+{%- endcomment -%}
+{%- assign slides = "image|/assets/images/hero@2x.png|" | split: ";;" -%}
 <section class="hero" data-section="hero" data-section-theme="dark">
-  <div class="hero__media">
-    <img src="/assets/images/hero@2x.png" alt="" fetchpriority="high">
+  <div class="hero__slides" data-hero-slides>
+    {%- for slide in slides -%}
+      {%- assign parts = slide | split: "|" -%}
+      <div class="hero__slide{% if forloop.first %} is-active{% endif %}">
+        {%- if parts[0] == "video" -%}
+          <video class="hero__media-el" src="{{ parts[1] }}" autoplay muted loop playsinline{% if parts[2] and parts[2] != "" %} poster="{{ parts[2] }}"{% endif %}></video>
+        {%- else -%}
+          <img class="hero__media-el" src="{{ parts[1] }}" alt=""{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+        {%- endif -%}
+      </div>
+    {%- endfor -%}
   </div>
   <div class="hero__scrim" aria-hidden="true"></div>
-  <h1 class="hero__headline" data-hero-headline>Carry On<span class="text-brand">.</span></h1>
+  <h1 class="hero__headline" data-hero-headline><span class="hero__headline-inner">Carry On<span class="text-brand">.</span></span></h1>
+  {%- if slides.size > 1 -%}
+    <div class="hero__dots" data-hero-dots>
+      {%- for slide in slides -%}
+        <button class="hero__dot{% if forloop.first %} is-active{% endif %}" type="button" aria-label="Show slide {{ forloop.index }}"></button>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+  {%- comment -%} Darkening scrim for the mobile sticky cover (see theme.js) {%- endcomment -%}
+  <div class="hero__cover" aria-hidden="true"></div>
 </section>

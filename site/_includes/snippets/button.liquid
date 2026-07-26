@@ -7,5 +7,5 @@
 {%- if href -%}{%- assign tag = "a" -%}{%- endif -%}
 <{{ tag }}{% if href %} href="{{ href }}"{% endif %} class="btn btn--{{ style | default: 'dark' }} {{ extra_class }}">
   <span class="btn__label">{{ label }}</span>
-  {% render "snippets/icon", name: "arrow-up-right" %}
+  <span class="btn__icon">{% render "snippets/icon", name: "arrow-up-right" %}</span>
 </{{ tag }}>

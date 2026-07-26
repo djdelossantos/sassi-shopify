@@ -44,8 +44,18 @@ h1, h2, h3, h4, p { font-weight: inherit; }
 .btn--dark { background: var(--color-bg-inverse); color: var(--color-text-on-inverse); }
 .btn--light { background: var(--color-bg-primary); color: var(--color-text-primary); }
 .btn--outline { background: transparent; color: var(--color-text-primary); border: 1px solid var(--color-border-default); }
+/* 24x24 mask so the arrow's hover animation stays inside its own box. */
+.btn__icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; overflow: hidden; }
 .btn .icon--arrow { transition: transform 0.25s ease; }
-.btn:hover .icon--arrow { transform: translate(2px, -2px); }
+/* On hover the arrow flies out top-right and a fresh one comes back from
+   bottom-left — a quick "send", clipped to the 24x24 box. */
+.btn:hover .icon--arrow { animation: btn-arrow-send 0.5s ease; }
+@keyframes btn-arrow-send {
+  0%   { transform: translate(0, 0);        opacity: 1; }
+  40%  { transform: translate(115%, -115%); opacity: 0; }
+  55%  { transform: translate(-115%, 115%); opacity: 0; }
+  100% { transform: translate(0, 0);        opacity: 1; }
+}
 
 /* ---- Header ----
    Mobile (Figma 390x60): solid obsidian bar, content always white.
@@ -108,7 +118,8 @@ body.has-menu-open { overflow: hidden; }
   background: var(--color-white-100);
 }
 .site-header__icons { display: flex; align-items: center; gap: var(--space-24); width: 108px; justify-content: flex-end; }
-.site-header__icons a { color: inherit; display: block; }
+.site-header__icons a { color: inherit; display: block; transition: color 0.2s ease; }
+.site-header__icons a:hover { color: var(--color-bg-brand); }
 .site-header__burger { color: inherit; }
 
 /* the fixed header overlays content — sections run full-bleed beneath it */
@@ -119,29 +130,43 @@ main { padding-top: 0; }
   position: relative; height: 100svh; min-height: 560px;
   overflow: hidden; background: var(--color-bg-inverse);
 }
-.hero__media, .hero__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Media layer: 1..N stacked slides (image or video). One slide = static; multiple
+   crossfade (see theme.js initHeroCarousel). Ready for a Shopify blocks-based hero. */
+.hero__slides { position: absolute; inset: 0; }
+.hero__slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.9s ease; }
+.hero__slide.is-active { opacity: 1; }
+.hero__media-el { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero__dots { position: absolute; bottom: var(--space-24); left: 0; right: 0; z-index: 3; display: flex; justify-content: center; gap: var(--space-8); }
+.hero__dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.4); cursor: pointer; transition: background-color 0.2s ease; }
+.hero__dot.is-active { background: var(--color-white-100); }
 .hero__scrim {
   position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(18,16,14,0.5) 0%, rgba(18,16,14,0) 45%);
 }
-/* noise/grain is baked into hero@2x.png — no overlay element needed */
+/* Darkening layer for the mobile sticky cover — scrubbed 0→~0.6 as section 2 rises
+   over the hero (see theme.js). Stays at 0 on desktop (which darkens via filter). */
+.hero__cover { position: absolute; inset: 0; z-index: 5; background: var(--color-bg-inverse); opacity: 0; pointer-events: none; }
+/* noise/grain is baked into the hero media — no overlay element needed */
 .hero__headline {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   text-align: center; color: var(--color-white-100);
   font-size: 40px; font-weight: var(--font-weight-800);
   letter-spacing: var(--letter-spacing-neg-0-98);
+  overflow: hidden; padding-block: 0.14em; /* mask window for the reveal */
 }
+.hero__headline-inner { display: inline-block; will-change: transform; }
 
 /* ---- Brand intro: dark image column + white copy column ---- */
 .brand-intro {
   display: flex; flex-direction: column;
   background: var(--color-bg-primary); color: var(--color-text-primary);
-  height: 100svh; min-height: 100svh;
 }
-/* equal halves on mobile */
-.brand-intro__media { flex: 1 1 50%; min-height: 0; position: relative; overflow: hidden; }
+/* Mobile: natural height — a fixed landscape image band, copy flows beneath. This
+   avoids the fragile 100svh 50/50 split, which renders inconsistently across real
+   mobile browsers as the address bar shows/hides. Desktop restores the split row. */
+.brand-intro__media { aspect-ratio: 4 / 3; position: relative; overflow: hidden; }
 .brand-intro__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.brand-intro__copy { flex: 1 1 50%; min-height: 0; padding: var(--space-40) var(--space-16); display: flex; align-items: center; }
+.brand-intro__copy { padding: var(--space-40) var(--space-16); display: flex; align-items: center; }
 .brand-intro__inner { display: flex; flex-direction: column; gap: var(--space-16); max-width: 800px; width: 100%; }
 .brand-intro__heading {
   font-size: 40px; font-weight: var(--font-weight-800);
@@ -151,9 +176,60 @@ main { padding-top: 0; }
 .brand-intro__heading .text-brand { white-space: nowrap; }
 .brand-intro__body { font-size: var(--font-size-16); line-height: 1.6; letter-spacing: 0.02em; color: var(--color-text-secondary); }
 
+/* Pinned scroll reveal (see theme.js). Heading splits into masked lines that
+   slide up; media clip-reveals; body + button rise. Initial hidden states are
+   scoped to html.has-gsap so a no-JS / reduced-motion visitor sees everything. */
+.brand-intro__line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.brand-intro__line-inner { display: inline-block; will-change: transform; }
+html.has-gsap .brand-intro__media { clip-path: inset(100% 0 0 0); }
+html.has-gsap .brand-intro__heading { visibility: hidden; }
+html.has-gsap .brand-intro__body,
+html.has-gsap .brand-intro__cta { opacity: 0; }
+
+/* Intro stack (desktop, JS on): hero + section 2 share one pinned 100vh frame so
+   section 2 can rise up and bury the hero (see theme.js). Without JS it's a plain
+   wrapper — the two sections simply stack in normal flow. */
+@media (min-width: 900px) {
+  html.has-gsap .intro-stack {
+    position: relative; height: 100vh; overflow: hidden;
+    /* White base, shared with the (white) categories section below, so the seam
+       between them is white-on-white — no visible hairline. */
+    background: var(--color-bg-primary);
+  }
+  /* Dark backdrop for the hero's scale-back. It stops 10px short of the bottom
+     so the very bottom edge stays white — the receding hero's bottom gap is
+     covered by the rising panel anyway, so the dark is never needed down there. */
+  html.has-gsap .intro-stack::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 10px;
+    background: var(--color-bg-inverse); z-index: 0;
+  }
+  html.has-gsap .intro-stack .hero,
+  html.has-gsap .intro-stack .brand-intro {
+    position: absolute; inset: 0; height: 100%; min-height: 0;
+  }
+  html.has-gsap .intro-stack .hero { z-index: 1; will-change: transform, filter; }
+  html.has-gsap .intro-stack .brand-intro { z-index: 2; will-change: transform; }
+}
+
+/* Mobile cover (JS on): instead of a pin, the hero is sticky and section 2 rises
+   up over it on native scroll (smooth on touch). Section 2 is full-height so it
+   fully covers; its image grows to fill, copy stays natural at the bottom. The
+   hero darkens + slightly recedes via a scrubbed scrim (see theme.js). */
+@media (max-width: 899px) {
+  html.has-gsap .intro-stack .hero { position: sticky; top: 0; height: 100dvh; z-index: 1; }
+  html.has-gsap .intro-stack .brand-intro { position: relative; z-index: 2; min-height: 100dvh; }
+  html.has-gsap .intro-stack .brand-intro__media { aspect-ratio: auto; flex: 1 1 auto; min-height: 40dvh; }
+  html.has-gsap .intro-stack .brand-intro__copy { flex: 0 0 auto; }
+}
+
 /* ---- Categories (mobile: stacked cards, pad 16, gap 40) ---- */
-.categories { display: flex; flex-direction: column; gap: var(--space-40); padding: var(--space-16); }
+.categories { padding: var(--space-16); background: var(--color-bg-primary); }
+.categories__track { display: flex; flex-direction: column; gap: var(--space-40); }
 .category-card { display: flex; flex-direction: column; gap: var(--space-8); }
+/* Mobile: each card fades + lifts into place on enter (JS). Desktop is a pinned
+   horizontal scroll (see below + theme.js) where cards are simply visible. */
+html.has-gsap .categories { overflow: hidden; }
+html.has-gsap .category-card { opacity: 0; will-change: transform, opacity; }
 .category-card__image { position: relative; aspect-ratio: 358 / 320; overflow: hidden; }
 .category-card__image img { width: 100%; height: 100%; object-fit: cover; }
 .category-card__title { font-size: var(--font-size-24); font-weight: var(--font-weight-900); }
@@ -186,7 +262,6 @@ main { padding-top: 0; }
 /* ---- Black series: full-bleed image with overlaid head + CTA ---- */
 .black-series {
   position: relative; height: 100svh; min-height: 560px; overflow: hidden;
-  margin: var(--space-16) 0;
   background: var(--color-bg-subtle);
 }
 .black-series__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -197,16 +272,25 @@ main { padding-top: 0; }
    negative margins — the overlaps come from Figma, expressed as a fraction of
    bag height so they scale. Left bags sit on top, as in the Figma composition. */
 .black-series__bags {
-  position: absolute; left: 0; right: 0; bottom: 18%; z-index: 1;
-  display: flex; justify-content: center; align-items: flex-end;
-  --bag-h: 32vw;
+  /* Mobile: 2×2 grid, centred in the band BETWEEN the heading (~166px) and the CTA
+     (~136px), so it never collides with them on short screens. --bag-h is sized so
+     the widest row (≈1.46 × bag-h) nearly reaches both edges, capped by the band
+     height (svh) so the whole stack always fits. Desktop collapses to one lineup. */
+  position: absolute; left: 0; right: 0; top: 166px; bottom: 136px; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  --bag-h: clamp(150px, min(69vw - 14px, 51svh - 155px), 380px);
 }
+.black-series__bag-row { display: flex; align-items: flex-end; justify-content: center; }
+.black-series__bag-row + .black-series__bag-row { margin-top: calc(var(--bag-h) * -0.05); }
 .black-series__bag { flex: none; height: var(--bag-h); width: auto; display: block; }
 /* left → right: Athena · Artemis · Atlas · Apollo (Figma overlaps ÷ 1235px frame) */
-.black-series__bag--athena  { z-index: 4; }
-.black-series__bag--artemis { z-index: 3; margin-left: calc(var(--bag-h) * -0.129); }
-.black-series__bag--atlas   { z-index: 2; margin-left: calc(var(--bag-h) * -0.169); }
-.black-series__bag--apollo  { z-index: 1; margin-left: calc(var(--bag-h) * -0.113); }
+/* Per-bag aspect-ratio (matches each PNG) so the box width is known before the
+   lazy image loads — otherwise the lineup reflows mid-animation on first load. */
+.black-series__bag--athena  { z-index: 4; aspect-ratio: 1729 / 2470; }
+.black-series__bag--artemis { z-index: 3; aspect-ratio: 2189 / 2470; margin-left: calc(var(--bag-h) * -0.129); }
+/* atlas starts row 2 on mobile → no left overlap here (restored for desktop below) */
+.black-series__bag--atlas   { z-index: 2; aspect-ratio: 1948 / 2470; }
+.black-series__bag--apollo  { z-index: 1; aspect-ratio: 1854 / 2470; margin-left: calc(var(--bag-h) * -0.113); }
 .black-series__head, .black-series__cta { z-index: 2; }
 .black-series__head {
   position: absolute; top: var(--space-80); left: 0; right: 0;
@@ -222,6 +306,13 @@ main { padding-top: 0; }
   color: var(--color-text-secondary);
 }
 .black-series__cta { position: absolute; bottom: var(--space-80); left: var(--space-16); right: var(--space-16); }
+/* Motion (gsap on): heading + sub start hidden; the CTA is a mask its button rises
+   out of (like the intro logo). Bag transforms are owned by gsap (see theme.js) —
+   no CSS transform here, which would compound with gsap's x. */
+html.has-gsap .black-series__heading,
+html.has-gsap .black-series__sub { opacity: 0; }
+html.has-gsap .black-series__cta { overflow: hidden; }
+html.has-gsap .black-series__bag { will-change: transform; }
 
 /* ---- Night banner ---- */
 .night-banner { position: relative; height: 100svh; overflow: hidden; }
@@ -378,7 +469,12 @@ main { padding-top: 0; }
 .accordion summary::-webkit-details-marker { display: none; }
 .accordion summary .icon { transition: transform 0.3s ease; }
 .accordion[open] summary .icon { transform: rotate(45deg); }
-.accordion__body { padding: 0 var(--space-8) var(--space-16); font-size: var(--font-size-14); color: var(--color-text-secondary); line-height: 1.6; }
+/* With JS the panel animates open/closed, so drive the icon from an .is-open class
+   (toggled on click) instead of [open] (which lingers through the close tween). */
+html.has-gsap .accordion[open] summary .icon { transform: none; }
+html.has-gsap .accordion.is-open summary .icon { transform: rotate(45deg); }
+/* border-box + overflow:hidden so the JS height tween includes padding and clips. */
+.accordion__body { padding: 0 var(--space-8) var(--space-16); font-size: var(--font-size-14); color: var(--color-text-secondary); line-height: 1.6; box-sizing: border-box; overflow: hidden; }
 
 /* ---- Reveal animation base (JS enhances; harmless without JS) ---- */
 .reveal { opacity: 1; }
@@ -392,10 +488,11 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
      Mobile-only behaviours (auto-hide, expanding menu) are reset here. */
   .site-header {
     background: linear-gradient(to bottom, rgba(18, 16, 14, 0.5) 0%, rgba(18, 16, 14, 0) 100%);
-    transition: color 0.35s ease, background 0.35s ease;
+    transition: color 0.35s ease, background 0.35s ease, transform 0.35s ease;
     height: auto; overflow: visible; transform: none;
   }
-  .site-header--hidden { transform: none; }
+  /* Desktop also auto-hides on scroll down / reveals on scroll up (JS toggles it). */
+  .site-header--hidden { transform: translateY(-100%); }
   .site-header.is-open { height: auto; }
   .site-header__drawer { display: none; }
   /* Nothing dark under the bar: drop the scrim (it would grey a white section) */
@@ -438,7 +535,7 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 
   /* full viewport, 50/50 columns */
   .brand-intro { flex-direction: row; height: 100vh; min-height: 700px; }
-  .brand-intro__media { flex: 0 0 50%; min-height: 0; }
+  .brand-intro__media { flex: 0 0 50%; min-height: 0; aspect-ratio: auto; }
   /* fluid padding so the 56px heading still fits at the 900px breakpoint */
   .brand-intro__copy { flex: 0 0 50%; min-width: 0; padding: clamp(24px, 5.6vw, 80px); }
   .brand-intro__inner { gap: var(--space-24); }
@@ -448,10 +545,28 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 
   .site-header__icons a.site-header__account { display: block; }
 
-  .categories { flex-direction: row; gap: var(--space-16); padding: var(--space-16); }
+  /* Fallback row (no gsap / reduced motion): normal 3-up grid. */
+  .categories__track { flex-direction: row; gap: var(--space-16); }
   .category-card { flex: 1; text-align: center; padding-bottom: 42px; }
   .category-card__image { aspect-ratio: 459 / 470; }
   .category-card__copy { max-width: 320px; margin: 0 auto; }
+
+  /* Pinned entrance (gsap on): the aligned 3-up grid (same as the fallback row) is
+     the FINAL state. The section pins as a 100vh frame and the whole grid slides in
+     from off-screen right, decelerating to a stop in place, then holds and unpins
+     (see theme.js). gsap owns the track transform — no CSS transform here. */
+  html.has-gsap .categories {
+    height: 100vh; min-height: 640px;
+    padding: 0;
+    display: flex; align-items: center;
+  }
+  html.has-gsap .categories__track {
+    width: 100%;
+    padding-inline: var(--space-16);
+    gap: var(--space-16);
+    align-items: flex-start;
+  }
+  html.has-gsap .categories .category-card { opacity: 1; padding-bottom: 0; will-change: transform; }
 
   /* full viewport: 3 x 2 tiles that stretch to fill it */
   .lifestyle {
@@ -465,10 +580,14 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .lifestyle-tile__text p { display: block; font-size: var(--font-size-14); letter-spacing: 0.02em; line-height: 1.6; }
 
   .black-series { height: 100vh; min-height: 700px; }
+  /* Desktop composition: collapse the two rows into one 4-wide lineup. */
+  .black-series__bags { flex-direction: row; justify-content: center; align-items: flex-end; top: auto; bottom: 18%; --bag-h: 32vw; }
+  .black-series__bag-row { display: contents; }
+  .black-series__bag--atlas { margin-left: calc(var(--bag-h) * -0.169); } /* restore desktop overlap */
   .black-series__head { top: var(--space-72); gap: var(--space-16); }
   .black-series__heading { font-size: var(--font-size-56); }
   .black-series__sub { font-size: var(--font-size-18); }
-  .black-series__cta { bottom: var(--space-56); left: 0; right: 0; display: flex; justify-content: center; }
+  .black-series__cta { bottom: var(--space-80); left: 0; right: 0; display: flex; justify-content: center; }
   .black-series__cta .btn { width: 340px; }
 
   .night-banner { height: 100vh; min-height: 700px; }
@@ -632,4 +751,41 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 /* No JS / reduced motion: never show the panel at all. */
 @media (prefers-reduced-motion: reduce) {
   .page-intro { display: none; }
+}
+
+/* ---- First-load preloader ---- */
+/* Dark full-screen cover shown on a real document load (fresh visit / refresh)
+   only — client-side link transitions don't reload the document, so this never
+   runs then and won't collide with the orange/white intro. Centred count above
+   three bouncing brand-orange dots; slides up to reveal when the page is ready. */
+.preloader {
+  position: fixed; inset: 0; z-index: 10000;
+  background: var(--color-bg-inverse);
+  display: flex; align-items: center; justify-content: center;
+  clip-path: inset(0 0 0 0);
+  will-change: clip-path;
+}
+.preloader.is-done { display: none !important; }
+.preloader__inner { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.preloader__count {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-800);
+  font-size: 18px; line-height: 1;
+  color: var(--color-text-on-inverse);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.preloader__dots { display: flex; gap: 7px; }
+.preloader__dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-bg-brand);
+  animation: preloader-bounce 1.1s infinite ease-in-out both;
+}
+.preloader__dots span:nth-child(2) { animation-delay: 0.14s; }
+.preloader__dots span:nth-child(3) { animation-delay: 0.28s; }
+@keyframes preloader-bounce {
+  0%, 70%, 100% { transform: translateY(0); opacity: 0.55; }
+  35% { transform: translateY(-10px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preloader__dots span { animation: none; opacity: 1; }
 }

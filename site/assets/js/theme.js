@@ -18,6 +18,65 @@
   // Reassigned by the header-theme setup; called by Lenis + after each swap.
   var updateHeaderTheme = function () {};
   var applyHeaderTheme = function () {};
+  // Intro-motion callbacks fired once the cover (preloader on first load,
+  // page-intro on swap) begins revealing the page — so on-load reveals aren't
+  // wasted behind the cover. Registered fresh by buildMainMotion; fired once.
+  var pageRevealHooks = [];
+  var firePageReveal = function () {
+    pageRevealHooks.splice(0).forEach(function (fn) { try { fn(); } catch (e) {} });
+  };
+
+  /* ===================== First-load preloader ===================== */
+  // Runs on a real document load (fresh visit / refresh) only. The 00→100 count
+  // is smart-synced: it creeps while loading and is paced to land on 100 the
+  // moment the page is actually ready, with a short minimum so it's always seen.
+  // Then the dark panel slides up to reveal the page.
+  var pre = document.querySelector("[data-preloader]");
+  if (pre) {
+    var countEl = pre.querySelector("[data-preloader-count]");
+    var preDone = false;
+    var finishPre = function () {
+      if (preDone) { return; }
+      preDone = true;
+      var hide = function () { pre.classList.add("is-done"); };
+      firePageReveal(); // play on-load reveals as the panel lifts
+      if (!reducedMotion && typeof gsap !== "undefined") {
+        gsap.to(pre, { clipPath: "inset(0% 0% 100% 0%)", duration: 0.7, ease: "power2.inOut", onComplete: hide });
+      } else {
+        hide();
+      }
+    };
+
+    if (reducedMotion) {
+      // No count animation; snap to 100 and reveal (without motion) once loaded.
+      if (countEl) { countEl.textContent = "100"; }
+      var revealRM = function () { setTimeout(finishPre, 400); };
+      if (document.readyState === "complete") { revealRM(); }
+      else { window.addEventListener("load", revealRM, { once: true }); }
+    } else {
+      var preStart = performance.now();
+      var preMin = 1200;                               // always show at least this long
+      var preReady = document.readyState === "complete";
+      window.addEventListener("load", function () { preReady = true; });
+      setTimeout(function () { preReady = true; }, 10000); // safety: never trap the page
+      var preVal = 0;
+      var preFmt = function (n) {
+        n = Math.max(0, Math.min(100, Math.round(n)));
+        return n < 100 ? ("0" + n).slice(-2) : "100";
+      };
+      var preTick = function (now) {
+        var elapsed = now - preStart;
+        // Creep toward ~90 while loading; race to 100 once ready and past the min.
+        var target = (preReady && elapsed >= preMin) ? 100 : 90 * (1 - Math.exp(-elapsed / 650));
+        preVal += (target - preVal) * 0.1;
+        if (target === 100 && preVal > 99.3) { preVal = 100; }
+        if (countEl) { countEl.textContent = preFmt(preVal); }
+        if (preVal >= 100) { finishPre(); return; }
+        requestAnimationFrame(preTick);
+      };
+      requestAnimationFrame(preTick);
+    }
+  }
 
   /* ===================== Persistent header + menu ===================== */
   // The header lives outside <main>, so it survives page swaps and is set up
@@ -208,6 +267,7 @@
       }).length;
       var wrap = document.querySelector("[data-loadmore-wrap]");
       if (wrap) { wrap.toggleAttribute("data-exhausted", visibleCount >= totalMatching); }
+      shopGrid.dispatchEvent(new CustomEvent("shop:changed")); // let the motion layer batch-reveal new cards
     };
 
     var types = document.querySelector("[data-shop-types]");
@@ -246,11 +306,78 @@
     shopApply();
   }
 
+  // Hero carousel — crossfades between multiple media slides. Inert for a single
+  // slide (static hero). Videos autoplay muted/loop via markup. Respects reduced
+  // motion (no auto-advance). Dots (if present) jump + restart the timer.
+  function initHeroCarousel() {
+    var wrap = document.querySelector("[data-hero-slides]");
+    if (!wrap) { return; }
+    var slides = wrap.querySelectorAll(".hero__slide");
+    if (slides.length < 2) { return; } // single media = nothing to rotate
+    var dots = document.querySelectorAll("[data-hero-dots] .hero__dot");
+    var idx = 0, timer = null, interval = 6000;
+    var go = function (n) {
+      slides[idx].classList.remove("is-active");
+      if (dots[idx]) { dots[idx].classList.remove("is-active"); }
+      idx = (n + slides.length) % slides.length;
+      slides[idx].classList.add("is-active");
+      if (dots[idx]) { dots[idx].classList.add("is-active"); }
+    };
+    var start = function () { if (!reducedMotion && !timer) { timer = setInterval(function () { go(idx + 1); }, interval); } };
+    var stop = function () { if (timer) { clearInterval(timer); timer = null; } };
+    dots.forEach(function (dot, n) { dot.addEventListener("click", function () { stop(); go(n); start(); }); });
+    // Touch swipe (mobile): drag left → next, right → prev; pause auto-advance.
+    var sx = null;
+    wrap.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; stop(); }, { passive: true });
+    wrap.addEventListener("touchend", function (e) {
+      if (sx === null) { return; }
+      var dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) { go(idx + (dx < 0 ? 1 : -1)); }
+      sx = null; start();
+    }, { passive: true });
+    start();
+  }
+
+  // PDP accordions — smooth GSAP height + fade on expand/collapse, with the icon
+  // rotating in sync. Native <details> stays the fallback when motion is off.
+  function initAccordions() {
+    var accs = document.querySelectorAll(".accordion");
+    if (!accs.length || !motionOn) { return; }
+    accs.forEach(function (details) {
+      var summary = details.querySelector("summary");
+      var body = details.querySelector(".accordion__body");
+      if (!summary || !body) { return; }
+      if (details.open) { details.classList.add("is-open"); }
+      summary.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (details._busy) { return; }
+        details._busy = true;
+        if (!details.open) {
+          details.open = true;
+          details.classList.add("is-open");
+          var full = body.scrollHeight;
+          gsap.fromTo(body, { height: 0, opacity: 0 }, {
+            height: full, opacity: 1, duration: 0.4, ease: "power2.out",
+            onComplete: function () { body.style.height = "auto"; details._busy = false; }
+          });
+        } else {
+          details.classList.remove("is-open");
+          gsap.to(body, {
+            height: 0, opacity: 0, duration: 0.35, ease: "power2.inOut",
+            onComplete: function () { details.open = false; body.style.height = ""; body.style.opacity = ""; details._busy = false; }
+          });
+        }
+      });
+    });
+  }
+
   function initFeatures() {
     initQty();
     initGallery();
     initSwatches();
     initShop();
+    initHeroCarousel();
+    initAccordions();
   }
 
   /* ===================== Motion layer ===================== */
@@ -281,36 +408,267 @@
   // Motion that belongs to <main>. Scoped in a gsap.context so a page swap can
   // revert it (kills its tweens + ScrollTriggers, restores inline styles).
   var mainCtx = null;
+  // Split a heading into line wrappers (overflow-hidden) each holding an inner
+  // span, for a mask-up reveal. Preserves the red span's colour and keeps
+  // non-breaking-space word groups intact. Returns the inner spans (to animate).
+  function splitHeadingLines(heading) {
+    var tokens = [];
+    [].forEach.call(heading.childNodes, function (node) {
+      var red = node.nodeType === 1 && node.classList && node.classList.contains("text-brand");
+      (node.textContent || "").split(" ").forEach(function (w) { if (w.length) { tokens.push({ w: w, red: red }); } });
+    });
+    heading.textContent = "";
+    var words = tokens.map(function (t) {
+      var s = document.createElement("span");
+      s.textContent = t.w;
+      if (t.red) { s.className = "text-brand"; }
+      s.style.display = "inline-block";
+      heading.appendChild(s);
+      heading.appendChild(document.createTextNode(" "));
+      return s;
+    });
+    var groups = [], top = null;
+    words.forEach(function (s) {
+      var t = s.offsetTop;
+      if (top === null || Math.abs(t - top) > 4) { groups.push([]); top = t; }
+      groups[groups.length - 1].push(s);
+    });
+    heading.textContent = "";
+    var inners = [];
+    groups.forEach(function (group) {
+      var line = document.createElement("span"); line.className = "brand-intro__line";
+      var inner = document.createElement("span"); inner.className = "brand-intro__line-inner";
+      group.forEach(function (s, i) {
+        inner.appendChild(s);
+        if (i < group.length - 1) { inner.appendChild(document.createTextNode(" ")); }
+      });
+      line.appendChild(inner);
+      heading.appendChild(line);
+      inners.push(inner);
+    });
+    return inners;
+  }
+
   function buildMainMotion() {
+    pageRevealHooks = []; // fresh per build; fired when the cover lifts
+
+    // Hero headline rises out of a mask (like the intro logo), held hidden until
+    // the cover lifts so it's always seen. The active slide's image scales in.
     var heroHeadline = document.querySelector("[data-hero-headline]");
     if (heroHeadline) {
-      gsap.from(heroHeadline, { y: 40, opacity: 0, duration: 1.1, ease: "power3.out", delay: 0.15 });
-      var heroImg = document.querySelector(".hero__media img");
-      if (heroImg) { gsap.from(heroImg, { scale: 1.08, duration: 1.8, ease: "power2.out" }); }
+      var heroInner = heroHeadline.querySelector(".hero__headline-inner");
+      var heroImg = document.querySelector(".hero__slide.is-active .hero__media-el");
+      if (heroImg && heroImg.tagName === "IMG") { gsap.from(heroImg, { scale: 1.08, duration: 1.8, ease: "power2.out" }); }
+      if (heroInner) {
+        gsap.set(heroInner, { yPercent: 110 });
+        pageRevealHooks.push(function () {
+          // Hold on the empty hero for a beat before the headline rises (dramatic).
+          gsap.to(heroInner, { yPercent: 0, duration: 1.0, ease: "power3.out", delay: 2 });
+        });
+      }
     }
 
-    var lifestyleTiles = gsap.utils.toArray(".lifestyle-tile.reveal");
-    if (lifestyleTiles.length) {
-      var lifestyleRows = function (columns) {
-        for (var i = 0; i < lifestyleTiles.length; i += columns) {
-          var row = lifestyleTiles.slice(i, i + columns);
-          gsap.to(row, {
-            opacity: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.18,
-            scrollTrigger: { trigger: row[0], start: "top 88%" }
+    // Brand intro — the hero holds while section 2 rises up and buries it, then
+    // section 2 reveals its content. Desktop pins the hero + intro "stack" and
+    // scrubs: Phase 1 cover (panel slides up, hero eases back — dims + scales),
+    // Phase 2 reveal (media clip, headline masking up line-by-line, body + button).
+    // Mobile skips the cover and just reveals section 2 on enter.
+    var brand = document.querySelector(".brand-intro");
+    if (brand) {
+      var stack = document.querySelector(".intro-stack");
+      var hero = document.querySelector(".hero");
+      var biMedia = brand.querySelector(".brand-intro__media");
+      var biImg = biMedia && biMedia.querySelector("img");
+      var biHeading = brand.querySelector(".brand-intro__heading");
+      var biHeadingHTML = biHeading ? biHeading.innerHTML : "";
+      var biBody = brand.querySelector(".brand-intro__body");
+      var biCta = brand.querySelector(".brand-intro__cta");
+
+      // Re-split the headline into masked lines (fresh DOM after any swap/resize).
+      var biReset = function () {
+        var lines = [];
+        if (biHeading) {
+          biHeading.innerHTML = biHeadingHTML;
+          lines = splitHeadingLines(biHeading);
+          biHeading.style.visibility = "visible"; // lines start masked, so no flash
+        }
+        if (lines.length) { gsap.set(lines, { yPercent: 115 }); }
+        return lines;
+      };
+      // Append the content reveal (Phase 2) to a timeline starting at time `at`.
+      var biReveal = function (tl, lines, at) {
+        if (biMedia) { tl.fromTo(biMedia, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.8, ease: "power2.out" }, at); }
+        if (biImg) { tl.fromTo(biImg, { scale: 1.18 }, { scale: 1, duration: 1.1, ease: "none" }, at); }
+        if (lines.length) { tl.to(lines, { yPercent: 0, duration: 0.7, stagger: 0.12, ease: "power3.out" }, at + 0.15); }
+        if (biBody) { tl.fromTo(biBody, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at + 0.45); }
+        if (biCta) { tl.fromTo(biCta, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at + 0.6); }
+      };
+
+      var biMM = gsap.matchMedia();
+      // Desktop: pin the stack, cover the hero (with hero easing back), then reveal.
+      biMM.add("(min-width: 900px)", function () {
+        if (!stack || !hero) { return; }
+        var lines = biReset();
+        var tl = gsap.timeline({
+          scrollTrigger: { trigger: stack, start: "top top", end: "+=220%", pin: true, scrub: 0.5, anticipatePin: 1 }
+        });
+        tl.fromTo(brand, { yPercent: 100 }, { yPercent: 0, duration: 1, ease: "power2.inOut" }, 0)
+          .fromTo(hero, { scale: 1, filter: "brightness(1)" }, { scale: 0.93, filter: "brightness(0.5)", duration: 1, ease: "power2.inOut" }, 0)
+          .to({}, { duration: 0.2 }); // brief hold on the full cover
+        biReveal(tl, lines, tl.duration());
+      });
+      // Mobile: the hero is sticky (CSS) and section 2 rises over it on native
+      // scroll. We scrub a darken + subtle recede on the hero as it's covered, and
+      // reveal section 2's content as it rises into place.
+      biMM.add("(max-width: 899px)", function () {
+        var lines = biReset();
+        var tl = gsap.timeline({ scrollTrigger: { trigger: brand, start: "top 70%" } });
+        biReveal(tl, lines, 0);
+        var heroCover = document.querySelector(".hero__cover");
+        var heroSlides = document.querySelector(".hero__slides");
+        var covTl = gsap.timeline({
+          scrollTrigger: { trigger: brand, start: "top bottom", end: "top top", scrub: true }
+        });
+        if (heroCover) { covTl.fromTo(heroCover, { opacity: 0 }, { opacity: 0.6, ease: "none" }, 0); }
+        if (heroSlides) { covTl.fromTo(heroSlides, { scale: 1 }, { scale: 0.94, ease: "none" }, 0); }
+      });
+    }
+
+    // Categories — desktop pins the section as a 100vh frame; the cards fly in from
+    // off-screen right ONE AT A TIME (staggered), each decelerating to a stop in its
+    // aligned slot, then the finished grid holds briefly before unpinning. So the
+    // section always unpins on the clean grid, never mid-motion. Mobile settles upward.
+    var catCards = gsap.utils.toArray(".categories .category-card");
+    if (catCards.length) {
+      var catSection = document.querySelector(".categories");
+      var catMM = gsap.matchMedia();
+      catMM.add("(min-width: 900px)", function () {
+        var vw = function () { return catSection.clientWidth; };
+        var tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: catSection, start: "top top",
+            end: function () { return "+=" + Math.round(vw() * 1.5); },
+            pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true
+          }
+        });
+        // Each card starts one viewport to the right (off-screen) and eases to its
+        // slot; stagger separates them so they arrive left-to-right, one at a time.
+        tl.fromTo(catCards,
+          { x: function () { return vw(); } },
+          { x: 0, ease: "power2.out", duration: 1, stagger: 0.6 })
+          // Hold on the completed grid so it never unpins mid-motion.
+          .to({}, { duration: 0.25 });
+      });
+      // Mobile: gentle upward settle as each card enters.
+      catMM.add("(max-width: 899px)", function () {
+        catCards.forEach(function (card) {
+          var img = card.querySelector(".category-card__image img");
+          var tl = gsap.timeline({ scrollTrigger: { trigger: card, start: "top 85%" } });
+          tl.fromTo(card, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0);
+          if (img) { tl.fromTo(img, { scale: 1.12 }, { scale: 1, duration: 1.1, ease: "power2.out" }, 0); }
+        });
+      });
+    }
+
+    // Black Series — desktop pins the full-screen gray section; the bags slide in
+    // from off-screen right ONE AT A TIME (left→right: Athena→Apollo) into their
+    // overlapped lineup, then the heading fades in, the subtext after, and finally
+    // the CTA rises out of a mask (like the intro logo). Mobile: fade-up, no pin.
+    var bsSection = document.querySelector(".black-series");
+    if (bsSection) {
+      var bsBags = gsap.utils.toArray(".black-series__bag");
+      var bsHeading = bsSection.querySelector(".black-series__heading");
+      var bsSub = bsSection.querySelector(".black-series__sub");
+      var bsCta = bsSection.querySelector(".black-series__cta .btn");
+      var bsMM = gsap.matchMedia();
+      bsMM.add("(min-width: 900px)", function () {
+        var vw = function () { return bsSection.clientWidth; };
+        var tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: bsSection, start: "top top",
+            end: function () { return "+=" + Math.round(vw() * 1.6); },
+            pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true
+          }
+        });
+        // Bags fly in from off-screen right, staggered, into the overlapped lineup.
+        tl.fromTo(bsBags, { x: function () { return vw(); } },
+          { x: 0, ease: "power2.out", duration: 1, stagger: 0.6 }, 0);
+        // Heading, then subtext.
+        if (bsHeading) { tl.fromTo(bsHeading, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 2.5); }
+        if (bsSub) { tl.fromTo(bsSub, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 2.9); }
+        // CTA rises out of its mask last.
+        if (bsCta) { tl.fromTo(bsCta, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 3.3); }
+        // Hold on the finished composition before unpin.
+        tl.to({}, { duration: 0.3 });
+      });
+      bsMM.add("(max-width: 899px)", function () {
+        if (bsBags.length) {
+          gsap.fromTo(bsBags, { opacity: 0, y: 30 }, {
+            opacity: 1, y: 0, duration: 0.8, ease: "power3.out", stagger: 0.12,
+            scrollTrigger: { trigger: bsSection, start: "top 72%" }
           });
         }
-      };
-      var lifestyleMedia = gsap.matchMedia();
-      lifestyleMedia.add("(min-width: 900px)", function () { lifestyleRows(3); });
-      lifestyleMedia.add("(max-width: 899px)", function () { lifestyleRows(2); });
+        [bsHeading, bsSub].forEach(function (el, i) {
+          if (!el) { return; }
+          gsap.fromTo(el, { opacity: 0, y: 20 }, {
+            opacity: 1, y: 0, duration: 0.6, ease: "power3.out", delay: 0.12 * i,
+            scrollTrigger: { trigger: bsSection, start: "top 58%" }
+          });
+        });
+        if (bsCta) {
+          gsap.fromTo(bsCta, { yPercent: 110 }, {
+            yPercent: 0, duration: 0.6, ease: "power3.out",
+            scrollTrigger: { trigger: bsSection, start: "top 52%" }
+          });
+        }
+      });
+    }
+
+    // Lifestyle tiles — ScrollTrigger.batch groups the tiles that enter the
+    // viewport together and staggers each batch in. Works for the 2-col (mobile)
+    // and 3-col (desktop) grids alike, no per-row math. Reveals once.
+    var lifestyleTiles = gsap.utils.toArray(".lifestyle-tile.reveal");
+    if (lifestyleTiles.length) {
+      ScrollTrigger.batch(lifestyleTiles, {
+        start: "top 88%",
+        onEnter: function (batch) {
+          gsap.to(batch, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.14, overwrite: true });
+        }
+      });
     }
 
     document.querySelectorAll(".reveal:not(.lifestyle-tile)").forEach(function (el) {
+      if (el.closest("[data-shop-grid]")) { return; } // shop cards are batch-revealed below
       gsap.to(el, {
         opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
         scrollTrigger: { trigger: el, start: "top 88%" }
       });
     });
+
+    // Shop grid — stagger the product cards in with ScrollTrigger.batch (same idea
+    // as the lifestyle tiles). Re-batches when the visible set changes (filter /
+    // load-more, via the "shop:changed" event). Reuses the .reveal initial state;
+    // each card reveals once (tracked with data-revealed).
+    var shopGrid = document.querySelector("[data-shop-grid]");
+    if (shopGrid) {
+      var shopBatch = [];
+      var revealShop = function () {
+        shopBatch.forEach(function (st) { st.kill(); });
+        shopBatch = [];
+        var pending = gsap.utils.toArray(shopGrid.querySelectorAll(".shop__cell:not([hidden]) .product-card"))
+          .filter(function (card) { return !card.dataset.revealed; });
+        if (!pending.length) { return; }
+        shopBatch = ScrollTrigger.batch(pending, {
+          start: "top 92%",
+          onEnter: function (batch) {
+            batch.forEach(function (card) { card.dataset.revealed = "1"; });
+            gsap.to(batch, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.08, overwrite: true });
+          }
+        });
+      };
+      pageRevealHooks.push(revealShop); // initial batch waits for the cover to lift
+      shopGrid.addEventListener("shop:changed", function () { revealShop(); ScrollTrigger.refresh(); });
+    }
 
     var parallax = document.querySelector("[data-parallax]");
     if (parallax) {
@@ -411,7 +769,10 @@
           window.location.href = href; // couldn't parse — fall back to a hard load
           return;
         }
-        return nextFrame().then(revealAnim).then(function () {
+        return nextFrame().then(function () {
+          firePageReveal(); // play the page's on-load reveals as the panel sweeps up
+          return revealAnim();
+        }).then(function () {
           intro.classList.add("is-done");
           navigating = false;
         });

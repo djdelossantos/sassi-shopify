@@ -3,8 +3,10 @@ layout: layout.liquid
 title: Carry On
 permalink: /
 ---
-{% render "sections/hero" %}
-{% render "sections/brand-intro" %}
+<div class="intro-stack">
+  {% render "sections/hero" %}
+  {% render "sections/brand-intro" %}
+</div>
 {% render "sections/categories" %}
 {% render "sections/lifestyle-grid" %}
 {% render "sections/black-series" %}
