@@ -391,6 +391,7 @@ html.has-gsap .black-series__bag { will-change: transform; }
 @media (max-width: 899px) {
   .btn { font-size: var(--font-size-14); }
   .dot { width: 14px; height: 14px; }
+  .categories { padding-bottom: 40px; }
   .site-footer__copyright { text-align: left; }
   /* mobile icon order: bag on the left, search on the right */
   .site-header__icons > a:last-child { order: -1; }
@@ -692,7 +693,7 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .shop__types { gap: var(--space-8); }
   .shop__title { font-size: var(--font-size-18); }
   .shop__count { font-size: var(--font-size-12); }
-  .shop__type,
+  .shop__type { font-size: 12px; }
   .shop__filters { font-size: var(--font-size-14); }
   .shop__filters { gap: 4px; }
   .shop__filters .icon { width: 16px; height: 16px; }

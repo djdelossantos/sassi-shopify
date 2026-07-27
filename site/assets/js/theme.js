@@ -496,8 +496,16 @@
         return lines;
       };
       // Append the content reveal (Phase 2) to a timeline starting at time `at`.
-      var biReveal = function (tl, lines, at) {
-        if (biMedia) { tl.fromTo(biMedia, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.8, ease: "power2.out" }, at); }
+      // opts.fadeMedia: fade the image in instead of wiping it (the clip-path wipe
+      // reads as a glitch on mobile's enter-trigger, so mobile uses a plain fade).
+      var biReveal = function (tl, lines, at, opts) {
+        opts = opts || {};
+        if (biMedia) {
+          // Reset the CSS initial clip (inset(100%)) open — mobile reveals via opacity,
+          // not the wipe, so without this the media stays fully clipped and invisible.
+          if (opts.fadeMedia) { tl.fromTo(biMedia, { opacity: 0, clipPath: "inset(0% 0% 0% 0%)" }, { opacity: 1, duration: 0.7, ease: "power2.out" }, at); }
+          else { tl.fromTo(biMedia, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.8, ease: "power2.out" }, at); }
+        }
         if (biImg) { tl.fromTo(biImg, { scale: 1.18 }, { scale: 1, duration: 1.1, ease: "none" }, at); }
         if (lines.length) { tl.to(lines, { yPercent: 0, duration: 0.7, stagger: 0.12, ease: "power3.out" }, at + 0.15); }
         if (biBody) { tl.fromTo(biBody, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at + 0.45); }
@@ -513,9 +521,11 @@
           scrollTrigger: { trigger: stack, start: "top top", end: "+=220%", pin: true, scrub: 0.5, anticipatePin: 1 }
         });
         tl.fromTo(brand, { yPercent: 100 }, { yPercent: 0, duration: 1, ease: "power2.inOut" }, 0)
-          .fromTo(hero, { scale: 1, filter: "brightness(1)" }, { scale: 0.93, filter: "brightness(0.5)", duration: 1, ease: "power2.inOut" }, 0)
-          .to({}, { duration: 0.2 }); // brief hold on the full cover
-        biReveal(tl, lines, tl.duration());
+          .fromTo(hero, { scale: 1, filter: "brightness(1)" }, { scale: 0.93, filter: "brightness(0.5)", duration: 1, ease: "power2.inOut" }, 0);
+        // Begin the content reveal once the white panel covers ~50% of the viewport
+        // (yPercent 50, i.e. halfway through Phase 1) so the section is never a blank
+        // white sheet — the content rises in as the panel finishes covering the hero.
+        biReveal(tl, lines, 0.5);
       });
       // Mobile: the hero is sticky (CSS) and section 2 rises over it on native
       // scroll. We scrub a darken + subtle recede on the hero as it's covered, and
@@ -523,14 +533,16 @@
       biMM.add("(max-width: 899px)", function () {
         var lines = biReset();
         var tl = gsap.timeline({ scrollTrigger: { trigger: brand, start: "top 70%" } });
-        biReveal(tl, lines, 0);
+        biReveal(tl, lines, 0, { fadeMedia: true });
+        // Mobile: dim only (no scale — scaling the sticky hero glitches on some
+        // phones). The shrink stays a desktop-only effect.
         var heroCover = document.querySelector(".hero__cover");
-        var heroSlides = document.querySelector(".hero__slides");
-        var covTl = gsap.timeline({
-          scrollTrigger: { trigger: brand, start: "top bottom", end: "top top", scrub: true }
-        });
-        if (heroCover) { covTl.fromTo(heroCover, { opacity: 0 }, { opacity: 0.6, ease: "none" }, 0); }
-        if (heroSlides) { covTl.fromTo(heroSlides, { scale: 1 }, { scale: 0.94, ease: "none" }, 0); }
+        if (heroCover) {
+          gsap.fromTo(heroCover, { opacity: 0 }, {
+            opacity: 0.6, ease: "none",
+            scrollTrigger: { trigger: brand, start: "top bottom", end: "top top", scrub: true }
+          });
+        }
       });
     }
 
@@ -544,11 +556,24 @@
       var catMM = gsap.matchMedia();
       catMM.add("(min-width: 900px)", function () {
         var vw = function () { return catSection.clientWidth; };
+        var vh = function () { return window.innerHeight; };
+        // Pin the 100vh frame. This trigger ONLY holds the section in place — the card
+        // motion lives on its own trigger (below) so it can begin before the pin does.
+        ScrollTrigger.create({
+          trigger: catSection, start: "top top",
+          end: function () { return "+=" + Math.round(vw() * 1.5); },
+          pin: true, anticipatePin: 1, invalidateOnRefresh: true
+        });
+        // Cards — one scrubbed timeline that spans the section's rise into view AND the
+        // pinned frame, so the white panel is never a blank sheet as it climbs. The
+        // staggered fly-in starts as the section passes 50% of the viewport ("top
+        // center") and finishes inside the pin. Because a single trigger owns the card
+        // x across both phases, the rise and the settle can't fight over the transform.
         var tl = gsap.timeline({
           scrollTrigger: {
-            trigger: catSection, start: "top top",
-            end: function () { return "+=" + Math.round(vw() * 1.5); },
-            pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true
+            trigger: catSection, start: "top center",
+            end: function () { return "+=" + Math.round(vh() * 0.5 + vw() * 1.5); },
+            scrub: 0.6, invalidateOnRefresh: true
           }
         });
         // Each card starts one viewport to the right (off-screen) and eases to its
