@@ -4,7 +4,7 @@
   list below maps 1:1 to Shopify section blocks when this becomes a theme:
   each entry is "type|src|poster" — type is "image" or "video".
 {%- endcomment -%}
-{%- assign slides = "image|/assets/images/hero@2x.png|" | split: ";;" -%}
+{%- assign slides = "image|/assets/images/hero@2x.png|;;video|/assets/videos/Sassi-Website-Hero-Video.webm|/assets/images/night-banner@2x.png" | split: ";;" -%}
 <section class="hero" data-section="hero" data-section-theme="dark">
   <div class="hero__slides" data-hero-slides>
     {%- for slide in slides -%}

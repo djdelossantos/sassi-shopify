@@ -315,27 +315,61 @@
     var slides = wrap.querySelectorAll(".hero__slide");
     if (slides.length < 2) { return; } // single media = nothing to rotate
     var dots = document.querySelectorAll("[data-hero-dots] .hero__dot");
+    var headline = document.querySelector("[data-hero-headline]");
     var idx = 0, timer = null, interval = 6000;
+    var videoOf = function (slide) { return slide.querySelector("video.hero__media-el"); };
+    // "Carry On." is the first slide's overlay only — hide it on every other slide.
+    var syncHeadline = function () { if (headline) { headline.classList.toggle("is-hidden", idx !== 0); } };
+    var clear = function () { if (timer) { clearTimeout(timer); timer = null; } };
+
+    // A video slide plays once from the top and advances when it ends; every video
+    // is unlooped (so `ended` fires) and paused off-screen — it only plays while
+    // active. Image slides keep the fixed hold below.
+    slides.forEach(function (slide) {
+      var v = videoOf(slide);
+      if (!v) { return; }
+      v.loop = false;
+      try { v.pause(); } catch (e) {}
+      v.addEventListener("ended", function () { if (slides[idx] === slide) { go(idx + 1); } });
+    });
+
+    // Hold on the active slide, then advance: images time out after `interval`;
+    // videos wait for their own `ended` (nothing to schedule here).
+    var hold = function () {
+      clear();
+      if (reducedMotion || videoOf(slides[idx])) { return; }
+      timer = setTimeout(function () { go(idx + 1); }, interval);
+    };
+    var play = function (v) {
+      if (!v || reducedMotion) { return; }
+      try { v.currentTime = 0; } catch (e) {}
+      var p = v.play();
+      if (p && p.catch) { p.catch(function () {}); }
+    };
     var go = function (n) {
+      var cur = videoOf(slides[idx]);
+      if (cur) { try { cur.pause(); } catch (e) {} } // hold last frame through the fade
       slides[idx].classList.remove("is-active");
       if (dots[idx]) { dots[idx].classList.remove("is-active"); }
       idx = (n + slides.length) % slides.length;
       slides[idx].classList.add("is-active");
       if (dots[idx]) { dots[idx].classList.add("is-active"); }
+      syncHeadline();
+      play(videoOf(slides[idx])); // restart the video from the beginning on entry
+      hold();
     };
-    var start = function () { if (!reducedMotion && !timer) { timer = setInterval(function () { go(idx + 1); }, interval); } };
-    var stop = function () { if (timer) { clearInterval(timer); timer = null; } };
-    dots.forEach(function (dot, n) { dot.addEventListener("click", function () { stop(); go(n); start(); }); });
+    dots.forEach(function (dot, n) { dot.addEventListener("click", function () { go(n); }); });
     // Touch swipe (mobile): drag left → next, right → prev; pause auto-advance.
     var sx = null;
-    wrap.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; stop(); }, { passive: true });
+    wrap.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; clear(); }, { passive: true });
     wrap.addEventListener("touchend", function (e) {
       if (sx === null) { return; }
       var dx = e.changedTouches[0].clientX - sx;
-      if (Math.abs(dx) > 40) { go(idx + (dx < 0 ? 1 : -1)); }
-      sx = null; start();
+      if (Math.abs(dx) > 40) { go(idx + (dx < 0 ? 1 : -1)); } else { hold(); }
+      sx = null;
     }, { passive: true });
-    start();
+    play(videoOf(slides[idx])); // in case the first slide is a video
+    hold();
   }
 
   // PDP accordions — smooth GSAP height + fade on expand/collapse, with the icon
@@ -414,23 +448,33 @@
   function splitHeadingLines(heading) {
     var tokens = [];
     [].forEach.call(heading.childNodes, function (node) {
+      if (node.nodeName === "BR") { tokens.push({ brk: true }); return; } // explicit forced break
       var red = node.nodeType === 1 && node.classList && node.classList.contains("text-brand");
       (node.textContent || "").split(" ").forEach(function (w) { if (w.length) { tokens.push({ w: w, red: red }); } });
     });
     heading.textContent = "";
-    var words = tokens.map(function (t) {
+    var breakBefore = false;
+    var words = tokens.reduce(function (acc, t) {
+      // A real <br> here makes the offsetTop measurement below reflect the forced
+      // break (so the following words fit/flow on their own line), and the flag is a
+      // belt-and-suspenders in case the two sides happen to share an offsetTop.
+      if (t.brk) { heading.appendChild(document.createElement("br")); breakBefore = true; return acc; }
       var s = document.createElement("span");
       s.textContent = t.w;
       if (t.red) { s.className = "text-brand"; }
       s.style.display = "inline-block";
+      if (breakBefore) { s.dataset.brk = "1"; breakBefore = false; }
       heading.appendChild(s);
       heading.appendChild(document.createTextNode(" "));
-      return s;
-    });
+      acc.push(s);
+      return acc;
+    }, []);
+    // Group words into visual lines by their rendered top, but always start a new
+    // line at a word flagged with an explicit break (from a <br> in the source).
     var groups = [], top = null;
     words.forEach(function (s) {
       var t = s.offsetTop;
-      if (top === null || Math.abs(t - top) > 4) { groups.push([]); top = t; }
+      if (top === null || Math.abs(t - top) > 4 || s.dataset.brk) { groups.push([]); top = t; }
       groups[groups.length - 1].push(s);
     });
     heading.textContent = "";
@@ -577,10 +621,17 @@
           }
         });
         // Each card starts one viewport to the right (off-screen) and eases to its
-        // slot; stagger separates them so they arrive left-to-right, one at a time.
+        // slot; stagger separates them so they arrive left-to-right, overlapping so
+        // the next card starts entering once the previous is CAT_OVERLAP_AT of the
+        // way to its slot. With power2.out (1-(1-t)^2), progress hits that fraction
+        // at t = 1-sqrt(1-CAT_OVERLAP_AT) of its own duration — earlier than
+        // CAT_OVERLAP_AT of duration, since the ease front-loads the motion.
+        var CAT_OVERLAP_AT = 0.35; // lower = next card enters sooner (more overlap)
+        var catCardDuration = 1;
+        var catCardStagger = catCardDuration * (1 - Math.sqrt(1 - CAT_OVERLAP_AT));
         tl.fromTo(catCards,
           { x: function () { return vw(); } },
-          { x: 0, ease: "power2.out", duration: 1, stagger: 0.6 })
+          { x: 0, ease: "power2.out", duration: catCardDuration, stagger: catCardStagger })
           // Hold on the completed grid so it never unpins mid-motion.
           .to({}, { duration: 0.25 });
       });
@@ -615,14 +666,21 @@
             pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true
           }
         });
-        // Bags fly in from off-screen right, staggered, into the overlapped lineup.
+        // Bags fly in from off-screen right, staggered so the next bag starts entering
+        // once the previous is BS_OVERLAP_AT of the way to its slot (same math as the
+        // categories cards — see theme.js's categories section for the derivation).
+        var BS_OVERLAP_AT = 0.35; // lower = next bag enters sooner (more overlap)
+        var bsBagDuration = 1;
+        var bsBagStagger = bsBagDuration * (1 - Math.sqrt(1 - BS_OVERLAP_AT));
+        var bsBagsEnd = bsBagDuration + bsBagStagger * (bsBags.length - 1);
         tl.fromTo(bsBags, { x: function () { return vw(); } },
-          { x: 0, ease: "power2.out", duration: 1, stagger: 0.6 }, 0);
-        // Heading, then subtext.
-        if (bsHeading) { tl.fromTo(bsHeading, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 2.5); }
-        if (bsSub) { tl.fromTo(bsSub, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 2.9); }
+          { x: 0, ease: "power2.out", duration: bsBagDuration, stagger: bsBagStagger }, 0);
+        // Heading, then subtext — timed relative to when the bags finish, since that
+        // point now moves with the (shorter) overlapped stagger above.
+        if (bsHeading) { tl.fromTo(bsHeading, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, bsBagsEnd + 0.1); }
+        if (bsSub) { tl.fromTo(bsSub, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, bsBagsEnd + 0.5); }
         // CTA rises out of its mask last.
-        if (bsCta) { tl.fromTo(bsCta, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 3.3); }
+        if (bsCta) { tl.fromTo(bsCta, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, bsBagsEnd + 0.9); }
         // Hold on the finished composition before unpin.
         tl.to({}, { duration: 0.3 });
       });
@@ -647,6 +705,29 @@
           });
         }
       });
+    }
+
+    // Affiliate strip — a compact invitation band. The brand rule draws across,
+    // the eyebrow fades, the heading masks up line-by-line, the sub fades, and the
+    // CTA rises out of its mask (the signature move from the intro + Black Series).
+    // Reveals once on enter.
+    var aff = document.querySelector(".affiliate");
+    if (aff) {
+      var affRule = aff.querySelector(".affiliate__rule");
+      var affLabel = aff.querySelector(".affiliate__eyebrow-label");
+      var affHeading = aff.querySelector(".affiliate__heading");
+      var affSub = aff.querySelector(".affiliate__sub");
+      var affCta = aff.querySelector(".affiliate__cta .btn");
+      var affLines = affHeading ? splitHeadingLines(affHeading) : [];
+      if (affHeading) { affHeading.style.visibility = "visible"; } // lines start masked
+      if (affLines.length) { gsap.set(affLines, { yPercent: 115 }); }
+
+      var affTl = gsap.timeline({ scrollTrigger: { trigger: aff, start: "top 75%" } });
+      if (affRule) { affTl.fromTo(affRule, { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power3.out" }, 0); }
+      if (affLabel) { affTl.fromTo(affLabel, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 0.1); }
+      if (affLines.length) { affTl.to(affLines, { yPercent: 0, duration: 0.7, stagger: 0.12, ease: "power3.out" }, 0.2); }
+      if (affSub) { affTl.fromTo(affSub, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.5); }
+      if (affCta) { affTl.fromTo(affCta, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 0.6); }
     }
 
     // Lifestyle tiles — ScrollTrigger.batch groups the tiles that enter the
