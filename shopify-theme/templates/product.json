@@ -2,6 +2,24 @@
   "sections": {
     "main": {
       "type": "main-product",
+      "blocks": {
+        "acc-1": {
+          "type": "accordion",
+          "settings": {
+            "heading": "Details & Specifications",
+            "use_metafield": true,
+            "content": "<p>Water-repellent nylon shell. Padded 15\" laptop sleeve. Quick-access front pocket. Reinforced base. 20L capacity.</p>"
+          }
+        },
+        "acc-2": {
+          "type": "accordion",
+          "settings": {
+            "heading": "Shipping, Returns & Warranty",
+            "content": "<p>Free shipping over ₱2,500. 30-day returns. 2-year warranty against manufacturing defects.</p>"
+          }
+        }
+      },
+      "block_order": ["acc-1", "acc-2"],
       "settings": {}
     }
   },

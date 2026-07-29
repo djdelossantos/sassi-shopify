@@ -706,10 +706,19 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
     grid-column: span 5; grid-row: 1; min-width: 0;
     position: sticky; top: 0; height: 100vh; min-height: 700px;
     gap: var(--space-8); /* restore title->price 8px (mobile is 0) */
-    padding: 0 var(--space-32); align-self: start;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: var(--space-32); align-self: start;
+    display: flex; flex-direction: column; align-items: center;
+    /* long info (e.g. open accordions) scrolls within the pinned column instead
+       of spilling out of reach — scrollbar hidden to avoid a second visible bar */
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
+  .pdp__info::-webkit-scrollbar { display: none; }
   .pdp__info > * { width: 100%; max-width: 542px; }
+  /* Centre the info when it fits; when it's taller than the viewport the auto
+     margins collapse so it top-aligns and the column becomes fully scrollable. */
+  .pdp__info > :first-child { margin-top: auto; }
+  .pdp__info > :last-child { margin-bottom: auto; }
   .pdp__accordions { padding: 0; margin-top: var(--space-16); }
   /* buy controls stay stacked full-width at all sizes, per design v2 */
 }

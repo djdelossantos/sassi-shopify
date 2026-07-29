@@ -190,12 +190,84 @@
     var qty = document.querySelector("[data-qty]");
     if (!qty) return;
     var value = qty.querySelector("[data-qty-value]");
+    var hidden = document.querySelector("[data-qty-input]"); // Shopify form quantity
+    var sync = function () { if (hidden) { hidden.value = value.textContent; } };
     qty.querySelector("[data-qty-minus]").addEventListener("click", function () {
-      value.textContent = Math.max(1, parseInt(value.textContent, 10) - 1);
+      value.textContent = Math.max(1, parseInt(value.textContent, 10) - 1); sync();
     });
     qty.querySelector("[data-qty-plus]").addEventListener("click", function () {
-      value.textContent = parseInt(value.textContent, 10) + 1;
+      value.textContent = parseInt(value.textContent, 10) + 1; sync();
     });
+    sync();
+  }
+
+  // Shopify PDP: map the swatch/select choices to a variant and keep the hidden
+  // variant id, price, and add-to-cart state in sync. Supersedes initSwatches when
+  // a product-json payload is present.
+  function initProductForm() {
+    var form = document.querySelector(".pdp__form");
+    var dataEl = document.querySelector("[data-product-json]");
+    if (!form || !dataEl) return;
+    var variants;
+    try { variants = JSON.parse(dataEl.textContent); } catch (e) { return; }
+    var idInput = form.querySelector("[name='id']");
+    var addBtn = form.querySelector("[data-add]");
+    var addLabel = addBtn && addBtn.querySelector(".btn__label");
+    var priceEl = document.querySelector("[data-price]");
+    var addText = dataEl.getAttribute("data-add-text") || "Add to bag";
+    var soldoutText = dataEl.getAttribute("data-soldout-text") || "Sold out";
+    var unavailableText = dataEl.getAttribute("data-unavailable-text") || "Unavailable";
+    var groups = [].slice.call(document.querySelectorAll("[data-option-index]"));
+
+    var chosen = function () {
+      var opts = [];
+      groups.forEach(function (g) {
+        var idx = parseInt(g.getAttribute("data-option-index"), 10);
+        var sel = g.querySelector("[data-option-select]");
+        if (sel) { opts[idx] = sel.value; return; }
+        var active = g.querySelector(".swatch.is-active");
+        if (active) { opts[idx] = active.getAttribute("data-value"); }
+      });
+      return opts;
+    };
+    var match = function (opts) {
+      for (var i = 0; i < variants.length; i++) {
+        var v = variants[i], ok = true;
+        for (var j = 0; j < opts.length; j++) {
+          if (opts[j] != null && v.options[j] !== opts[j]) { ok = false; break; }
+        }
+        if (ok) return v;
+      }
+      return null;
+    };
+    var update = function () {
+      var v = match(chosen());
+      if (!v) {
+        if (addBtn) { addBtn.disabled = true; }
+        if (addLabel) { addLabel.textContent = unavailableText; }
+        return;
+      }
+      if (idInput) { idInput.value = v.id; }
+      if (priceEl) { priceEl.textContent = v.price; }
+      if (addBtn) { addBtn.disabled = !v.available; }
+      if (addLabel) { addLabel.textContent = v.available ? addText : soldoutText; }
+    };
+
+    groups.forEach(function (g) {
+      var swatches = [].slice.call(g.querySelectorAll(".swatch"));
+      swatches.forEach(function (sw) {
+        sw.addEventListener("click", function () {
+          swatches.forEach(function (s) { s.classList.remove("is-active"); s.setAttribute("aria-checked", "false"); });
+          sw.classList.add("is-active"); sw.setAttribute("aria-checked", "true");
+          var lbl = g.querySelector("[data-color-label]");
+          if (lbl) { lbl.textContent = sw.getAttribute("data-value"); }
+          update();
+        });
+      });
+      var sel = g.querySelector("[data-option-select]");
+      if (sel) { sel.addEventListener("change", update); }
+    });
+    update();
   }
 
   function initGallery() {
@@ -382,32 +454,52 @@
 
   // PDP accordions — smooth GSAP height + fade on expand/collapse, with the icon
   // rotating in sync. Native <details> stays the fallback when motion is off.
+  // Single-open (accordion group): opening one collapses any open sibling, so the
+  // sticky info column stays bounded.
   function initAccordions() {
     var accs = document.querySelectorAll(".accordion");
     if (!accs.length || !motionOn) { return; }
+
+    var open = function (details, body) {
+      details.open = true;
+      details.classList.add("is-open");
+      var full = body.scrollHeight;
+      gsap.fromTo(body, { height: 0, opacity: 0 }, {
+        height: full, opacity: 1, duration: 0.4, ease: "power2.out",
+        onComplete: function () { body.style.height = "auto"; details._busy = false; }
+      });
+    };
+    var close = function (details, body) {
+      details.classList.remove("is-open");
+      gsap.to(body, {
+        height: 0, opacity: 0, duration: 0.35, ease: "power2.inOut",
+        onComplete: function () { details.open = false; body.style.height = ""; body.style.opacity = ""; details._busy = false; }
+      });
+    };
+
     accs.forEach(function (details) {
       var summary = details.querySelector("summary");
       var body = details.querySelector(".accordion__body");
       if (!summary || !body) { return; }
+      details._body = body;
       if (details.open) { details.classList.add("is-open"); }
       summary.addEventListener("click", function (e) {
         e.preventDefault();
         if (details._busy) { return; }
-        details._busy = true;
         if (!details.open) {
-          details.open = true;
-          details.classList.add("is-open");
-          var full = body.scrollHeight;
-          gsap.fromTo(body, { height: 0, opacity: 0 }, {
-            height: full, opacity: 1, duration: 0.4, ease: "power2.out",
-            onComplete: function () { body.style.height = "auto"; details._busy = false; }
+          // collapse any open sibling in the same group first (single-open)
+          var group = details.closest(".pdp__accordions") || document;
+          group.querySelectorAll(".accordion.is-open").forEach(function (other) {
+            if (other !== details && !other._busy && other._body) {
+              other._busy = true;
+              close(other, other._body);
+            }
           });
+          details._busy = true;
+          open(details, body);
         } else {
-          details.classList.remove("is-open");
-          gsap.to(body, {
-            height: 0, opacity: 0, duration: 0.35, ease: "power2.inOut",
-            onComplete: function () { details.open = false; body.style.height = ""; body.style.opacity = ""; details._busy = false; }
-          });
+          details._busy = true;
+          close(details, body);
         }
       });
     });
@@ -416,7 +508,7 @@
   function initFeatures() {
     initQty();
     initGallery();
-    initSwatches();
+    initProductForm(); // Shopify variant-aware swatches (replaces the cosmetic initSwatches)
     initShop();
     initHeroCarousel();
     initAccordions();

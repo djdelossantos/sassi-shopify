@@ -1,57 +1,207 @@
-<section class="pdp" data-section="product" data-section-theme="light">
-  <div class="pdp__inner">
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+-%}
+<section class="pdp" data-section="pdp" data-section-theme="light">
+  {%- comment -%} Gallery: desktop stacks all media past the sticky info; mobile shows
+    the main image + a tappable thumbnail strip (see theme.js initGallery). {%- endcomment -%}
+  <div class="pdp__gallery" data-gallery data-media-count="{{ product.media.size }}">
     <div class="pdp__media">
-      {%- if product.featured_media -%}
-        <img src="{{ product.featured_media | image_url: width: 1200 }}" alt="{{ product.featured_media.alt | default: product.title | escape }}" width="1200" loading="eager">
+      {%- for media in product.media -%}
+        <div class="pdp__media-item{% if forloop.first %} is-main{% endif %}"{% if forloop.first %} data-gallery-main{% endif %}>
+          <img src="{{ media | image_url: width: 1400 }}" alt="{{ media.alt | default: product.title | escape }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
+        </div>
       {%- else -%}
-        {{ 'product-1' | placeholder_svg_tag: 'pdp__placeholder' }}
-      {%- endif -%}
+        <div class="pdp__media-item is-main" data-gallery-main>{{ 'product-1' | placeholder_svg_tag: 'pdp__placeholder' }}</div>
+      {%- endfor -%}
       {%- if product.media.size > 1 -%}
-        <div class="pdp__thumbs">
-          {%- for media in product.media limit: 6 -%}
-            <img src="{{ media | image_url: width: 200 }}" alt="{{ media.alt | escape }}" width="200" loading="lazy">
-          {%- endfor -%}
+        <div class="pdp__dots" data-gallery-dots aria-hidden="true">
+          {%- for media in product.media -%}<span class="pdp__dot{% if forloop.first %} is-active{% endif %}"></span>{%- endfor -%}
         </div>
       {%- endif -%}
     </div>
+    {%- if product.media.size > 1 -%}
+      <div class="pdp__thumbs" data-gallery-thumbs>
+        {%- for media in product.media -%}
+          <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="View image {{ forloop.index }}"><img src="{{ media | image_url: width: 200 }}" alt="" loading="lazy"></button>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
 
-    <div class="pdp__info">
-      <h1 class="pdp__title">{{ product.title }}</h1>
-      <p class="pdp__price" data-price>{{ product.selected_or_first_available_variant.price | money }}</p>
-      {%- if product.description != blank -%}
-        <div class="pdp__desc rte">{{ product.description }}</div>
-      {%- endif -%}
+  <div class="pdp__info" data-lenis-prevent>
+    <h1 class="pdp__title">{{ product.title }}</h1>
+    <p class="pdp__price" data-price>{{ current_variant.price | money }}</p>
 
-      {%- form 'product', product, class: 'pdp__form' -%}
-        {%- unless product.has_only_default_variant -%}
-          {%- for option in product.options_with_values -%}
-            <div class="pdp__option">
-              <label class="pdp__option-label">{{ option.name }}</label>
-              <select name="options[{{ option.name | escape }}]" class="pdp__option-select">
-                {%- for value in option.values -%}
-                  <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value }}</option>
-                {%- endfor -%}
-              </select>
+    {%- comment -%} Option controls live OUTSIDE the form; JS reads them and sets the
+      hidden variant id inside the form (keeps the design's layout intact). {%- endcomment -%}
+    {%- unless product.has_only_default_variant -%}
+      {%- for option in product.options_with_values -%}
+        {%- liquid
+          assign opt_name = option.name | downcase
+          assign is_color = false
+          if opt_name contains 'color' or opt_name contains 'colour'
+            assign is_color = true
+          endif
+        -%}
+        <div class="pdp__color" data-option-index="{{ forloop.index0 }}">
+          {%- if is_color -%}
+            <p>{{ option.name }}: <strong data-color-label>{{ option.selected_value }}</strong></p>
+            <div class="pdp__swatches" role="radiogroup" aria-label="{{ option.name | escape }}">
+              {%- for value in option.values -%}
+                {%- liquid
+                  # value is an object on newer Shopify (with a native .swatch), a plain string on older
+                  assign vname = value.name | default: value
+                  assign vhandle = vname | downcase | handle
+                  # Swatch fill priority: native Shopify swatch (merchant-set) -> known-colour map -> neutral
+                  if value.swatch.image
+                    assign sw_style = value.swatch.image | image_url: width: 48 | prepend: 'background-image:url(' | append: ');background-size:cover'
+                  elsif value.swatch.color
+                    assign sw_style = value.swatch.color | prepend: 'background:'
+                  else
+                    case vhandle
+                      when 'black'
+                        assign sw_style = 'background:#12100e'
+                      when 'grey', 'gray'
+                        assign sw_style = 'background:#757575'
+                      when 'warm-grey', 'warm-gray'
+                        assign sw_style = 'background:#8b7153'
+                      when 'bronze', 'tan'
+                        assign sw_style = 'background:#a97541'
+                      when 'olive'
+                        assign sw_style = 'background:#59603e'
+                      when 'crimson'
+                        assign sw_style = 'background:#b41532'
+                      when 'red'
+                        assign sw_style = 'background:#ff4000'
+                      when 'white', 'beige'
+                        assign sw_style = 'background:#efece4;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'
+                      else
+                        assign sw_style = 'background:#cccccc'
+                    endcase
+                  endif
+                  assign is_sel = false
+                  if option.selected_value == vname
+                    assign is_sel = true
+                  endif
+                -%}
+                <button type="button" class="swatch{% if is_sel %} is-active{% endif %}" data-value="{{ vname | escape }}" style="{{ sw_style }}" role="radio" aria-checked="{{ is_sel }}" aria-label="{{ vname | escape }}"></button>
+              {%- endfor -%}
             </div>
-          {%- endfor -%}
-        {%- endunless -%}
+          {%- else -%}
+            <p class="pdp__option-label">{{ option.name }}</p>
+            <select class="pdp__option-select" data-option-select aria-label="{{ option.name | escape }}">
+              {%- for value in option.values -%}
+                <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value }}</option>
+              {%- endfor -%}
+            </select>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    {%- endunless -%}
 
-        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
-        <button type="submit" name="add" class="btn btn--dark" {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}>
-          <span class="btn__label">
-            {%- if product.selected_or_first_available_variant.available -%}{{ 'products.product.add_to_cart' | t }}{%- else -%}{{ 'products.product.sold_out' | t }}{%- endif -%}
-          </span>
+    {%- form 'product', product, class: 'pdp__form' -%}
+      <div class="pdp__buy">
+        <div class="qty" data-qty>
+          <button type="button" class="qty__btn" data-qty-minus aria-label="Decrease quantity">{% render 'icon', name: 'minus' %}</button>
+          <span class="qty__value" data-qty-value>1</span>
+          <button type="button" class="qty__btn" data-qty-plus aria-label="Increase quantity">{% render 'icon', name: 'plus' %}</button>
+        </div>
+        <input type="hidden" name="quantity" value="1" data-qty-input>
+        <input type="hidden" name="id" value="{{ current_variant.id }}">
+        <button type="submit" name="add" class="btn btn--dark pdp__add" data-add {% unless current_variant.available %}disabled{% endunless %}>
+          <span class="btn__label">{% if current_variant.available %}{{ 'products.product.add_to_cart' | t }}{% else %}{{ 'products.product.sold_out' | t }}{% endif %}</span>
           <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
         </button>
-      {%- endform -%}
-    </div>
+      </div>
+    {%- endform -%}
+
+    {%- if product.description != blank or section.blocks.size > 0 -%}
+      <div class="pdp__accordions">
+        {%- if product.description != blank -%}
+          <details class="accordion" open>
+            <summary>{{ section.settings.description_label }} {% render 'icon', name: 'plus' %}</summary>
+            <div class="accordion__body rte">{{ product.description }}</div>
+          </details>
+        {%- endif -%}
+        {%- for block in section.blocks -%}
+          <details class="accordion" {{ block.shopify_attributes }}>
+            <summary>{{ block.settings.heading }} {% render 'icon', name: 'plus' %}</summary>
+            <div class="accordion__body rte">
+              {%- if block.settings.use_metafield and product.metafields.custom.specifications != blank -%}
+                {{ product.metafields.custom.specifications | metafield_tag }}
+              {%- else -%}
+                {{ block.settings.content }}
+              {%- endif -%}
+            </div>
+          </details>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
   </div>
 </section>
+
+{%- comment -%} "You might also like" — related products from the product's first collection. {%- endcomment -%}
+{%- if section.settings.show_related -%}
+  {%- assign related = product.collections.first.products -%}
+  {%- if related.size > 1 -%}
+    <section class="product-grid" data-section="related" data-section-theme="light">
+      <div class="product-grid__head">
+        <h2 class="product-grid__heading">{{ section.settings.related_heading }}</h2>
+      </div>
+      <div class="product-grid__items">
+        {%- assign shown = 0 -%}
+        {%- for p in related -%}
+          {%- if p.id != product.id and shown < section.settings.related_limit -%}
+            {% render 'product-card', product: p %}
+            {%- assign shown = shown | plus: 1 -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </section>
+  {%- endif -%}
+{%- endif -%}
+
+{%- capture variant_json -%}
+[
+  {%- for v in product.variants -%}
+    {"id": {{ v.id }}, "available": {{ v.available }}, "options": {{ v.options | json }}, "price": {{ v.price | money | strip_html | json }}}{%- unless forloop.last -%},{%- endunless -%}
+  {%- endfor -%}
+]
+{%- endcapture -%}
+<script type="application/json" data-product-json
+        data-add-text="{{ 'products.product.add_to_cart' | t | escape }}"
+        data-soldout-text="{{ 'products.product.sold_out' | t | escape }}"
+        data-unavailable-text="{{ 'products.product.unavailable' | t | escape }}">{{ variant_json }}</script>
 
 {% schema %}
 {
   "name": "Product",
-  "settings": [],
-  "blocks": []
+  "settings": [
+    { "type": "text", "id": "description_label", "label": "Description accordion label", "default": "Description" },
+    { "type": "header", "content": "Related products" },
+    { "type": "checkbox", "id": "show_related", "label": "Show \"You might also like\"", "default": true },
+    { "type": "text", "id": "related_heading", "label": "Related heading", "default": "You might also like" },
+    { "type": "range", "id": "related_limit", "label": "Related products to show", "min": 2, "max": 8, "step": 1, "default": 4 }
+  ],
+  "blocks": [
+    {
+      "type": "accordion",
+      "name": "Accordion row",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Details & Specifications" },
+        { "type": "checkbox", "id": "use_metafield", "label": "Use each product's Specifications metafield", "info": "When on, this row shows the product's custom.specifications rich-text metafield (falls back to the content below if empty).", "default": false },
+        { "type": "richtext", "id": "content", "label": "Content (or fallback)", "default": "<p>Water-repellent nylon shell. Padded 15\" laptop sleeve. Quick-access front pocket. Reinforced base.</p>" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product",
+      "blocks": [
+        { "type": "accordion", "settings": { "heading": "Details & Specifications" } },
+        { "type": "accordion", "settings": { "heading": "Shipping, Returns & Warranty", "content": "<p>Free shipping over ₱2,500. 30-day returns. 2-year warranty against manufacturing defects.</p>" } }
+      ]
+    }
+  ]
 }
 {% endschema %}
