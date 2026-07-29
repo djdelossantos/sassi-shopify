@@ -1,0 +1,38 @@
+<section class="cart" data-section="cart" data-section-theme="light">
+  <div class="cart__inner">
+    <h1 class="cart__title">{{ 'cart.general.title' | t }}</h1>
+    {%- if cart.item_count > 0 -%}
+      <form action="{{ routes.cart_url }}" method="post" class="cart__form">
+        <ul class="cart__items">
+          {%- for item in cart.items -%}
+            <li class="cart__item">
+              {%- if item.image -%}<img class="cart__item-img" src="{{ item.image | image_url: width: 160 }}" alt="{{ item.title | escape }}" width="80" loading="lazy">{%- endif -%}
+              <div class="cart__item-info">
+                <a href="{{ item.url }}" class="cart__item-title">{{ item.product.title }}</a>
+                {%- unless item.product.has_only_default_variant -%}<p class="cart__item-variant">{{ item.variant.title }}</p>{%- endunless -%}
+                <p class="cart__item-price">{{ item.final_price | money }}</p>
+              </div>
+              <input type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="{{ 'products.product.quantity' | t }}" class="cart__item-qty">
+              <a href="{{ item.url_to_remove }}" class="cart__item-remove">{{ 'cart.general.remove' | t }}</a>
+            </li>
+          {%- endfor -%}
+        </ul>
+        <div class="cart__footer">
+          <p class="cart__subtotal">{{ 'cart.general.subtotal' | t }}: <strong>{{ cart.total_price | money }}</strong></p>
+          <button type="submit" name="update" class="btn btn--outline"><span class="btn__label">Update</span></button>
+          <button type="submit" name="checkout" class="btn btn--dark"><span class="btn__label">{{ 'cart.general.checkout' | t }}</span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></button>
+        </div>
+      </form>
+    {%- else -%}
+      <p class="cart__empty">{{ 'cart.general.empty' | t }}</p>
+      <a href="{{ routes.all_products_collection_url }}" class="btn btn--dark"><span class="btn__label">{{ 'cart.general.continue_shopping' | t }}</span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></a>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Cart",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,30 @@
+<section class="product-grid" data-section="collection" data-section-theme="light">
+  <div class="product-grid__head">
+    <h1 class="product-grid__heading">{{ collection.title }}</h1>
+    {%- if collection.products_count > 0 -%}
+      <span class="product-grid__count">{{ collection.products_count }} products</span>
+    {%- endif -%}
+  </div>
+  {%- if collection.description != blank -%}
+    <div class="product-grid__desc rte">{{ collection.description }}</div>
+  {%- endif -%}
+  <div class="product-grid__items" data-shop-grid>
+    {%- paginate collection.products by 24 -%}
+      {%- for product in collection.products -%}
+        <div class="shop__cell">{% render 'product-card', product: product %}</div>
+      {%- else -%}
+        <p>No products in this collection yet.</p>
+      {%- endfor -%}
+      {%- if paginate.pages > 1 -%}
+        <nav class="product-grid__pagination">{{ paginate | default_pagination }}</nav>
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection",
+  "settings": []
+}
+{% endschema %}

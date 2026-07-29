@@ -1,0 +1,38 @@
+<section class="affiliate" data-section="affiliate" data-section-theme="dark">
+  <span class="noise" aria-hidden="true"></span>
+  <div class="affiliate__inner">
+    <div class="affiliate__copy">
+      <p class="affiliate__eyebrow">
+        <span class="affiliate__rule" aria-hidden="true"></span>
+        <span class="affiliate__eyebrow-label">{{ section.settings.eyebrow }}</span>
+      </p>
+      <h2 class="affiliate__heading">{{ section.settings.heading_line1 }}<br>{{ section.settings.heading_line2 }} <span class="text-brand">{{ section.settings.heading_accent | replace: ' ', '&nbsp;' }}</span></h2>
+      <p class="affiliate__sub">{{ section.settings.sub_line1 }}<br>{{ section.settings.sub_line2 }}</p>
+    </div>
+    {%- if section.settings.button_label != blank -%}
+      <div class="affiliate__cta">
+        {% render 'button', label: section.settings.button_label, style: 'light', href: section.settings.button_link %}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Affiliate strip",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Affiliate Program" },
+    { "type": "header", "content": "Heading (line 1 / line 2 + red accent)" },
+    { "type": "text", "id": "heading_line1", "label": "Heading line 1", "default": "Love SASSi?" },
+    { "type": "text", "id": "heading_line2", "label": "Heading line 2", "default": "Get paid to" },
+    { "type": "text", "id": "heading_accent", "label": "Heading accent (red, kept on one line)", "default": "share it." },
+    { "type": "header", "content": "Subtext (two lines)" },
+    { "type": "text", "id": "sub_line1", "label": "Subtext line 1", "default": "Partner with SASSi and represent the bags you already carry." },
+    { "type": "text", "id": "sub_line2", "label": "Subtext line 2", "default": "Earn on every referral as an affiliate." },
+    { "type": "header", "content": "Call to action" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Become an Affiliate" },
+    { "type": "url", "id": "button_link", "label": "Button link" }
+  ],
+  "presets": [{ "name": "Affiliate strip" }]
+}
+{% endschema %}

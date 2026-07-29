@@ -1,0 +1,33 @@
+{%- comment -%} Product card — image, title, then price left / swatch dots right. Params: product (Shopify product) {%- endcomment -%}
+<a class="product-card reveal" href="{{ product.url }}">
+  <div class="product-card__image">
+    {%- if product.featured_image -%}
+      <img src="{{ product.featured_image | image_url: width: 720 }}"
+           alt="{{ product.featured_image.alt | default: product.title | escape }}"
+           width="{{ product.featured_image.width }}" height="{{ product.featured_image.height }}"
+           loading="lazy">
+    {%- else -%}
+      {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}
+    {%- endif -%}
+  </div>
+  <div class="product-card__meta">
+    <p class="product-card__title">{{ product.title }}</p>
+    <div class="product-card__info">
+      <p class="product-card__price">{{ product.price | money }}</p>
+      {%- liquid
+        assign color_option = null
+        for opt in product.options_with_values
+          assign dn = opt.name | downcase
+          if dn contains 'color' or dn contains 'colour'
+            assign color_option = opt
+          endif
+        endfor
+      -%}
+      {%- if color_option -%}
+        <span class="product-card__swatches">
+          {%- for v in color_option.values -%}<span class="dot dot--{{ v | downcase | handle }}"></span>{%- endfor -%}
+        </span>
+      {%- endif -%}
+    </div>
+  </div>
+</a>

@@ -1,0 +1,71 @@
+<footer class="site-footer" data-section="footer" data-section-theme="dark">
+  <div class="site-footer__top">
+    <div class="site-footer__join">
+      <h2 class="site-footer__join-title">{{ section.settings.join_title }}</h2>
+      <p class="site-footer__join-copy">{{ section.settings.join_copy }}</p>
+      {%- form 'customer', class: 'site-footer__form' -%}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        {%- if form.posted_successfully? -%}
+          <p class="site-footer__form-success">Thanks — you’re on the list.</p>
+        {%- else -%}
+          <input class="site-footer__input" type="email" name="contact[email]" placeholder="{{ section.settings.join_placeholder }}" aria-label="{{ section.settings.join_placeholder }}" required>
+          <button type="submit" class="btn btn--light">
+            <span class="btn__label">{{ section.settings.join_button }}</span>
+            <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
+          </button>
+        {%- endif -%}
+      {%- endform -%}
+    </div>
+    <div class="site-footer__links">
+      {%- for block in section.blocks -%}
+        <div class="site-footer__col" {{ block.shopify_attributes }}>
+          <h3>{{ block.settings.heading }}</h3>
+          <ul>
+            {%- for link in linklists[block.settings.menu].links -%}
+              <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+  <p class="site-footer__closer" data-closer>{{ section.settings.closer_text }}&nbsp;<span class="text-brand">{{ section.settings.closer_accent }}</span></p>
+  <p class="site-footer__copyright">&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.</p>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "header", "content": "Newsletter" },
+    { "type": "text", "id": "join_title", "label": "Title", "default": "Join SASSi" },
+    { "type": "textarea", "id": "join_copy", "label": "Copy", "default": "Never miss a chance to know the next drop, and exclusive discounts at SASSi." },
+    { "type": "text", "id": "join_placeholder", "label": "Input placeholder", "default": "Email for the next drop" },
+    { "type": "text", "id": "join_button", "label": "Button label", "default": "Notify Me" },
+    { "type": "header", "content": "Closer line" },
+    { "type": "text", "id": "closer_text", "label": "Closer text", "default": "Designed for You to" },
+    { "type": "text", "id": "closer_accent", "label": "Closer accent (red)", "default": "Carry On." }
+  ],
+  "blocks": [
+    {
+      "type": "menu_column",
+      "name": "Menu column",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Shop" },
+        { "type": "link_list", "id": "menu", "label": "Menu", "default": "footer" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "Footer",
+      "blocks": [
+        { "type": "menu_column", "settings": { "heading": "About" } },
+        { "type": "menu_column", "settings": { "heading": "Shop" } },
+        { "type": "menu_column", "settings": { "heading": "Support" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

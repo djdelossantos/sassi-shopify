@@ -1,0 +1,53 @@
+{%- comment -%} Lifestyle grid. Add blocks to customize, or leave empty for the default set. {%- endcomment -%}
+<section class="lifestyle" data-section="lifestyle" data-section-theme="dark">
+  {%- if section.blocks.size > 0 -%}
+    {%- for block in section.blocks -%}
+      <article class="lifestyle-tile reveal" {{ block.shopify_attributes }}>
+        {%- if block.settings.image != blank -%}
+          <img src="{{ block.settings.image | image_url: width: 900 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+        {%- else -%}
+          {{ 'lifestyle-1' | placeholder_svg_tag: 'lifestyle-tile__placeholder' }}
+        {%- endif -%}
+        <span class="lifestyle-tile__scrim" aria-hidden="true"></span>
+        <span class="noise" aria-hidden="true"></span>
+        <div class="lifestyle-tile__text">
+          <h3>{{ block.settings.title }}</h3>
+          <p>{{ block.settings.copy }}</p>
+        </div>
+      </article>
+    {%- endfor -%}
+  {%- else -%}
+    {%- assign tiles = "Work|Streamlined style for the daily grind.<br>Keeps your work essentials perfectly arranged.|life-work-2x;;Tech|Secure padding for your mobile office.<br>Guards laptops and cables from bumps.|life-tech-2x;;Active|Lightweight resilience for life in motion.<br>Transitions easily from workouts to city streets.|life-active-2x;;Utility|Heavy-duty storage that works harder.<br>Reinforced details handle your toughest loads.|life-utility-2x;;Travel|Travel-ready design for smooth transit.<br>Includes intuitive layouts for hassle-free miles.|life-travel-2x;;Lifestyle|Effortless versatility for your daily routine.<br>Adapts to your changing schedule instantly.|life-lifestyle-2x" | split: ";;" -%}
+    {%- for tile in tiles -%}
+      {%- assign parts = tile | split: "|" -%}
+      <article class="lifestyle-tile reveal">
+        <img src="{{ parts[2] | append: '.png' | asset_url }}" alt="{{ parts[0] }}" loading="lazy">
+        <span class="lifestyle-tile__scrim" aria-hidden="true"></span>
+        <span class="noise" aria-hidden="true"></span>
+        <div class="lifestyle-tile__text">
+          <h3>{{ parts[0] }}</h3>
+          <p>{{ parts[1] }}</p>
+        </div>
+      </article>
+    {%- endfor -%}
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Lifestyle grid",
+  "blocks": [
+    {
+      "type": "tile",
+      "name": "Tile",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Work" },
+        { "type": "inline_richtext", "id": "copy", "label": "Copy", "default": "Streamlined style for the daily grind." }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [{ "name": "Lifestyle grid" }]
+}
+{% endschema %}

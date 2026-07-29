@@ -1,0 +1,11 @@
+# SASSi theme — Theme Check config
+extends: :default
+
+# The design sizes every image inside a fixed CSS aspect-ratio box (object-fit:
+# cover), so layout shift is already prevented without width/height attributes.
+ImgWidthAndHeight:
+  enabled: false
+
+# Fonts are intentionally preloaded (two most-used weights) in theme.liquid.
+AssetPreload:
+  enabled: false

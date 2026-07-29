@@ -1,0 +1,48 @@
+<header class="site-header" data-header>
+  <div class="site-header__inner">
+    <div class="site-header__left">
+      <button class="site-header__burger" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
+        <span class="site-header__burger-open">{% render 'icon', name: 'menu' %}</span>
+        <span class="site-header__burger-close">{% render 'icon', name: 'close' %}</span>
+      </button>
+      <nav class="site-header__nav" aria-label="Main">
+        {%- for link in linklists[section.settings.menu].links -%}
+          <a href="{{ link.url }}">{{ link.title }}</a>
+        {%- endfor -%}
+      </nav>
+    </div>
+    <a class="site-header__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name }} home">
+      <span class="site-header__logo-mark" role="img" aria-label="{{ shop.name }}"></span>
+    </a>
+    <div class="site-header__icons">
+      <a href="{{ routes.search_url }}" aria-label="Search">{% render 'icon', name: 'search' %}</a>
+      {%- if shop.customer_accounts_enabled -%}
+        <a href="{{ routes.account_url }}" aria-label="Account" class="site-header__account">{% render 'icon', name: 'account' %}</a>
+      {%- endif -%}
+      <a href="{{ routes.cart_url }}" aria-label="Bag ({{ cart.item_count }})" data-cart-count>{% render 'icon', name: 'bag' %}</a>
+    </div>
+  </div>
+  <nav class="site-header__drawer" id="mobile-menu" aria-label="Mobile">
+    {%- for link in linklists[section.settings.menu].links -%}
+      <a href="{{ link.url }}">{{ link.title }}</a>
+    {%- endfor -%}
+    {%- if shop.customer_accounts_enabled -%}
+      <a href="{{ routes.account_url }}">Account</a>
+    {%- endif -%}
+    <p class="site-header__drawer-copyright">&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}</p>
+  </nav>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    }
+  ]
+}
+{% endschema %}

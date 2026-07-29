@@ -1,0 +1,33 @@
+{
+  "sections": {
+    "intro": {
+      "type": "intro",
+      "blocks": {
+        "slide-1": { "type": "slide", "settings": {} }
+      },
+      "block_order": ["slide-1"],
+      "settings": {}
+    },
+    "categories": {
+      "type": "categories",
+      "settings": {}
+    },
+    "lifestyle": {
+      "type": "lifestyle-grid",
+      "settings": {}
+    },
+    "black-series": {
+      "type": "black-series",
+      "settings": {}
+    },
+    "affiliate": {
+      "type": "affiliate",
+      "settings": {}
+    },
+    "featured": {
+      "type": "featured-collection",
+      "settings": {}
+    }
+  },
+  "order": ["intro", "categories", "lifestyle", "black-series", "affiliate", "featured"]
+}

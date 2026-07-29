@@ -1,0 +1,37 @@
+/* Open Sauce Two — self-hosted from Fontsource (SIL OFL). */
+
+@font-face {
+  font-family: "Open Sauce Two";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("open-sauce-two-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Open Sauce Two";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("open-sauce-two-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Open Sauce Two";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("open-sauce-two-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Open Sauce Two";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("open-sauce-two-latin-800-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Open Sauce Two";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("open-sauce-two-latin-900-normal.woff2") format("woff2");
+}

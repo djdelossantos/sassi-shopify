@@ -1,0 +1,33 @@
+<section class="search" data-section="search" data-section-theme="light">
+  <div class="search__inner">
+    <h1 class="search__title">{{ 'general.search.search' | t }}</h1>
+    <form action="{{ routes.search_url }}" method="get" role="search" class="search__form">
+      <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'general.search.placeholder' | t }}" aria-label="{{ 'general.search.placeholder' | t }}">
+      <button type="submit" class="btn btn--dark"><span class="btn__label">{{ 'general.search.search' | t }}</span><span class="btn__icon">{% render 'icon', name: 'search' %}</span></button>
+    </form>
+
+    {%- if search.performed -%}
+      {%- if search.results_count > 0 -%}
+        <p class="search__count">{{ 'general.search.results_count' | t: count: search.results_count }}</p>
+        <div class="product-grid__items">
+          {%- for item in search.results -%}
+            {%- if item.object_type == 'product' -%}
+              {% render 'product-card', product: item %}
+            {%- else -%}
+              <a class="search__result" href="{{ item.url }}">{{ item.title }}</a>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- else -%}
+        <p class="search__empty">{{ 'general.search.no_results' | t: terms: search.terms }}</p>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Search",
+  "settings": []
+}
+{% endschema %}

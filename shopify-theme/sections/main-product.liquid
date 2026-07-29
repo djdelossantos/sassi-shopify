@@ -1,0 +1,57 @@
+<section class="pdp" data-section="product" data-section-theme="light">
+  <div class="pdp__inner">
+    <div class="pdp__media">
+      {%- if product.featured_media -%}
+        <img src="{{ product.featured_media | image_url: width: 1200 }}" alt="{{ product.featured_media.alt | default: product.title | escape }}" width="1200" loading="eager">
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'pdp__placeholder' }}
+      {%- endif -%}
+      {%- if product.media.size > 1 -%}
+        <div class="pdp__thumbs">
+          {%- for media in product.media limit: 6 -%}
+            <img src="{{ media | image_url: width: 200 }}" alt="{{ media.alt | escape }}" width="200" loading="lazy">
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <div class="pdp__info">
+      <h1 class="pdp__title">{{ product.title }}</h1>
+      <p class="pdp__price" data-price>{{ product.selected_or_first_available_variant.price | money }}</p>
+      {%- if product.description != blank -%}
+        <div class="pdp__desc rte">{{ product.description }}</div>
+      {%- endif -%}
+
+      {%- form 'product', product, class: 'pdp__form' -%}
+        {%- unless product.has_only_default_variant -%}
+          {%- for option in product.options_with_values -%}
+            <div class="pdp__option">
+              <label class="pdp__option-label">{{ option.name }}</label>
+              <select name="options[{{ option.name | escape }}]" class="pdp__option-select">
+                {%- for value in option.values -%}
+                  <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value }}</option>
+                {%- endfor -%}
+              </select>
+            </div>
+          {%- endfor -%}
+        {%- endunless -%}
+
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+        <button type="submit" name="add" class="btn btn--dark" {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}>
+          <span class="btn__label">
+            {%- if product.selected_or_first_available_variant.available -%}{{ 'products.product.add_to_cart' | t }}{%- else -%}{{ 'products.product.sold_out' | t }}{%- endif -%}
+          </span>
+          <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
+        </button>
+      {%- endform -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product",
+  "settings": [],
+  "blocks": []
+}
+{% endschema %}

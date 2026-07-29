@@ -1,0 +1,107 @@
+{%- comment -%}
+  Intro stack — the hero and brand-story sit in one .intro-stack wrapper so the
+  desktop "cover" pin works (theme.js pins .intro-stack and rises .brand-intro
+  over .hero). Image slides come from blocks; an optional video is appended.
+{%- endcomment -%}
+{%- liquid
+  assign slide_count = section.blocks.size
+  if section.settings.hero_video != blank
+    assign slide_count = slide_count | plus: 1
+  endif
+  if slide_count == 0
+    assign slide_count = 1
+  endif
+-%}
+<div class="intro-stack">
+  <section class="hero" data-section="hero" data-section-theme="dark">
+    <div class="hero__slides" data-hero-slides>
+      {%- if section.blocks.size == 0 and section.settings.hero_video == blank -%}
+        <div class="hero__slide is-active">
+          <img class="hero__media-el" src="{{ 'hero-2x.png' | asset_url }}" alt="" fetchpriority="high">
+        </div>
+      {%- else -%}
+        {%- for block in section.blocks -%}
+          <div class="hero__slide{% if forloop.first %} is-active{% endif %}" {{ block.shopify_attributes }}>
+            {%- if block.settings.image != blank -%}
+              <img class="hero__media-el" src="{{ block.settings.image | image_url: width: 2400 }}" alt="{{ block.settings.image.alt | escape }}"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+            {%- else -%}
+              <img class="hero__media-el" src="{{ 'hero-2x.png' | asset_url }}" alt="">
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+        {%- if section.settings.hero_video != blank -%}
+          <div class="hero__slide{% if section.blocks.size == 0 %} is-active{% endif %}">
+            <video class="hero__media-el" autoplay muted loop playsinline{% if section.settings.hero_video.preview_image %} poster="{{ section.settings.hero_video.preview_image | image_url: width: 2400 }}"{% endif %}>
+              {%- for source in section.settings.hero_video.sources -%}
+                <source src="{{ source.url }}" type="{{ source.mime_type }}">
+              {%- endfor -%}
+            </video>
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+    <div class="hero__scrim" aria-hidden="true"></div>
+    <h1 class="hero__headline" data-hero-headline><span class="hero__headline-inner">{{ section.settings.headline }}<span class="text-brand">{{ section.settings.headline_accent }}</span></span></h1>
+    {%- if slide_count > 1 -%}
+      <div class="hero__dots" data-hero-dots>
+        {%- for i in (1..slide_count) -%}
+          <button class="hero__dot{% if forloop.first %} is-active{% endif %}" type="button" aria-label="Show slide {{ forloop.index }}"></button>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+    <div class="hero__cover" aria-hidden="true"></div>
+  </section>
+
+  <section class="brand-intro" id="brand" data-section="brand-intro" data-section-theme="light">
+    <div class="brand-intro__media" data-section-theme="dark">
+      {%- if section.settings.brand_image != blank -%}
+        <img src="{{ section.settings.brand_image | image_url: width: 1600 }}" alt="{{ section.settings.brand_image.alt | escape }}" loading="lazy">
+      {%- else -%}
+        <img src="{{ 'brand-intro-2x.png' | asset_url }}" alt="SASSi strap detail" loading="lazy">
+      {%- endif -%}
+    </div>
+    <div class="brand-intro__copy">
+      <div class="brand-intro__inner">
+        <h2 class="brand-intro__heading">{{ section.settings.brand_heading }} <span class="text-brand">{{ section.settings.brand_heading_accent }}</span></h2>
+        <p class="brand-intro__body">{{ section.settings.brand_body }}</p>
+        {%- if section.settings.brand_button_label != blank -%}
+          <div class="brand-intro__cta">
+            {% render 'button', label: section.settings.brand_button_label, style: 'dark', href: section.settings.brand_button_link %}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Intro (hero + brand)",
+  "settings": [
+    { "type": "header", "content": "Hero" },
+    { "type": "text", "id": "headline", "label": "Headline", "default": "Carry On" },
+    { "type": "text", "id": "headline_accent", "label": "Headline accent (red)", "default": "." },
+    { "type": "video", "id": "hero_video", "label": "Optional video slide (after image slides)" },
+    { "type": "header", "content": "Brand story" },
+    { "type": "image_picker", "id": "brand_image", "label": "Image" },
+    { "type": "text", "id": "brand_heading", "label": "Heading", "default": "A reliable product for the people" },
+    { "type": "text", "id": "brand_heading_accent", "label": "Heading accent (red)", "default": "we rely on." },
+    { "type": "textarea", "id": "brand_body", "label": "Body", "default": "Bags for the shift, the commute, and everything you haul in between. No fuss, no flex, gear that shows up every day, the way you do." },
+    { "type": "text", "id": "brand_button_label", "label": "Button label", "default": "Learn More" },
+    { "type": "url", "id": "brand_button_link", "label": "Button link" }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Hero image slide",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    { "name": "Intro (hero + brand)", "blocks": [{ "type": "slide" }] }
+  ]
+}
+{% endschema %}

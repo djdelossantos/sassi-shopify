@@ -1,0 +1,60 @@
+{%- comment -%} Category showcase. Add blocks to customize, or leave empty for the default set. {%- endcomment -%}
+<section class="categories" data-section="categories" data-section-theme="light">
+  <div class="categories__track">
+    {%- if section.blocks.size > 0 -%}
+      {%- for block in section.blocks -%}
+        <article class="category-card" {{ block.shopify_attributes }}>
+          <div class="category-card__image" data-section-theme="dark">
+            {%- if block.settings.image != blank -%}
+              <img src="{{ block.settings.image | image_url: width: 920 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+            {%- else -%}
+              {{ 'collection-1' | placeholder_svg_tag: 'category-card__placeholder' }}
+            {%- endif -%}
+            <span class="noise" aria-hidden="true"></span>
+          </div>
+          <h3 class="category-card__title">{{ block.settings.title }}</h3>
+          <p class="category-card__copy">{{ block.settings.copy }}</p>
+          {%- if section.settings.show_buttons and block.settings.link != blank -%}
+            {% render 'button', label: 'Learn More', style: 'outline', href: block.settings.link.url %}
+          {%- endif -%}
+        </article>
+      {%- endfor -%}
+    {%- else -%}
+      {%- assign cards = "Backpacks|Built for the daily grind. Protective and weather-ready.|cat-backpacks-2x;;Totes|Everyday utility, simplified. Spacious storage for your routine.|cat-totes-2x;;Handbags|Compact and organized. Quick-access pockets for daily essentials.|cat-handbags-2x" | split: ";;" -%}
+      {%- for card in cards -%}
+        {%- assign parts = card | split: "|" -%}
+        <article class="category-card">
+          <div class="category-card__image" data-section-theme="dark">
+            <img src="{{ parts[2] | append: '.png' | asset_url }}" alt="{{ parts[0] }}" loading="lazy">
+            <span class="noise" aria-hidden="true"></span>
+          </div>
+          <h3 class="category-card__title">{{ parts[0] }}</h3>
+          <p class="category-card__copy">{{ parts[1] }}</p>
+        </article>
+      {%- endfor -%}
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Categories",
+  "settings": [
+    { "type": "checkbox", "id": "show_buttons", "label": "Show card buttons", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Category",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Backpacks" },
+        { "type": "textarea", "id": "copy", "label": "Copy", "default": "Built for the daily grind. Protective and weather-ready." },
+        { "type": "collection", "id": "link", "label": "Links to collection" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [{ "name": "Categories" }]
+}
+{% endschema %}
