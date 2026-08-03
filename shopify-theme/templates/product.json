@@ -21,7 +21,11 @@
       },
       "block_order": ["acc-1", "acc-2"],
       "settings": {}
+    },
+    "recommendations": {
+      "type": "product-recommendations",
+      "settings": {}
     }
   },
-  "order": ["main"]
+  "order": ["main", "recommendations"]
 }

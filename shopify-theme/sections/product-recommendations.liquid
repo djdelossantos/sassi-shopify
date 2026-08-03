@@ -1,0 +1,38 @@
+{%- comment -%}
+  "You might also like" — Shopify's Product Recommendations API.
+
+  The `recommendations` object is only populated on the /recommendations/products
+  route, so this renders as an empty shell on the PDP itself and theme.js fetches
+  the real markup in via the Section Rendering API (see initRecommendations).
+  The shell keeps its data-url so the JS knows what to request.
+{%- endcomment -%}
+{%- if section.settings.show_related -%}
+  <div class="product-recommendations"
+       data-product-recommendations
+       data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.limit }}&intent=related">
+    {%- if recommendations.performed and recommendations.products_count > 0 -%}
+      <section class="product-grid" data-section="related" data-section-theme="light">
+        <div class="product-grid__head">
+          <h2 class="product-grid__heading">{{ section.settings.heading }}</h2>
+        </div>
+        <div class="product-grid__items">
+          {%- for p in recommendations.products -%}
+            {% render 'product-card', product: p %}
+          {%- endfor -%}
+        </div>
+      </section>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Product recommendations",
+  "settings": [
+    { "type": "checkbox", "id": "show_related", "label": "Show \"You might also like\"", "default": true },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "You might also like" },
+    { "type": "range", "id": "limit", "label": "Products to show", "min": 2, "max": 8, "step": 1, "default": 4 }
+  ],
+  "presets": [{ "name": "Product recommendations" }]
+}
+{% endschema %}

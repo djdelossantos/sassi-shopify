@@ -28,7 +28,9 @@
     {%- endif -%}
   </div>
 
-  <div class="pdp__info" data-lenis-prevent>
+  {%- comment -%} data-lenis-prevent is applied by theme.js (initPdpScroll), not here —
+    it only belongs on this column while the content actually overflows. {%- endcomment -%}
+  <div class="pdp__info">
     <h1 class="pdp__title">{{ product.title }}</h1>
     <p class="pdp__price" data-price>{{ current_variant.price | money }}</p>
 
@@ -48,43 +50,16 @@
             <p>{{ option.name }}: <strong data-color-label>{{ option.selected_value }}</strong></p>
             <div class="pdp__swatches" role="radiogroup" aria-label="{{ option.name | escape }}">
               {%- for value in option.values -%}
+                {%- capture sw_style -%}{% render 'swatch-style', value: value %}{%- endcapture -%}
                 {%- liquid
                   # value is an object on newer Shopify (with a native .swatch), a plain string on older
                   assign vname = value.name | default: value
-                  assign vhandle = vname | downcase | handle
-                  # Swatch fill priority: native Shopify swatch (merchant-set) -> known-colour map -> neutral
-                  if value.swatch.image
-                    assign sw_style = value.swatch.image | image_url: width: 48 | prepend: 'background-image:url(' | append: ');background-size:cover'
-                  elsif value.swatch.color
-                    assign sw_style = value.swatch.color | prepend: 'background:'
-                  else
-                    case vhandle
-                      when 'black'
-                        assign sw_style = 'background:#12100e'
-                      when 'grey', 'gray'
-                        assign sw_style = 'background:#757575'
-                      when 'warm-grey', 'warm-gray'
-                        assign sw_style = 'background:#8b7153'
-                      when 'bronze', 'tan'
-                        assign sw_style = 'background:#a97541'
-                      when 'olive'
-                        assign sw_style = 'background:#59603e'
-                      when 'crimson'
-                        assign sw_style = 'background:#b41532'
-                      when 'red'
-                        assign sw_style = 'background:#ff4000'
-                      when 'white', 'beige'
-                        assign sw_style = 'background:#efece4;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'
-                      else
-                        assign sw_style = 'background:#cccccc'
-                    endcase
-                  endif
                   assign is_sel = false
                   if option.selected_value == vname
                     assign is_sel = true
                   endif
                 -%}
-                <button type="button" class="swatch{% if is_sel %} is-active{% endif %}" data-value="{{ vname | escape }}" style="{{ sw_style }}" role="radio" aria-checked="{{ is_sel }}" aria-label="{{ vname | escape }}"></button>
+                <button type="button" class="swatch{% if is_sel %} is-active{% endif %}" data-value="{{ vname | escape }}" style="{{ sw_style | strip }}" role="radio" aria-checked="{{ is_sel }}" aria-label="{{ vname | escape }}"></button>
               {%- endfor -%}
             </div>
           {%- else -%}
@@ -140,26 +115,7 @@
   </div>
 </section>
 
-{%- comment -%} "You might also like" — related products from the product's first collection. {%- endcomment -%}
-{%- if section.settings.show_related -%}
-  {%- assign related = product.collections.first.products -%}
-  {%- if related.size > 1 -%}
-    <section class="product-grid" data-section="related" data-section-theme="light">
-      <div class="product-grid__head">
-        <h2 class="product-grid__heading">{{ section.settings.related_heading }}</h2>
-      </div>
-      <div class="product-grid__items">
-        {%- assign shown = 0 -%}
-        {%- for p in related -%}
-          {%- if p.id != product.id and shown < section.settings.related_limit -%}
-            {% render 'product-card', product: p %}
-            {%- assign shown = shown | plus: 1 -%}
-          {%- endif -%}
-        {%- endfor -%}
-      </div>
-    </section>
-  {%- endif -%}
-{%- endif -%}
+{%- comment -%} "You might also like" now lives in its own section (product-recommendations). {%- endcomment -%}
 
 {%- capture variant_json -%}
 [
@@ -177,11 +133,7 @@
 {
   "name": "Product",
   "settings": [
-    { "type": "text", "id": "description_label", "label": "Description accordion label", "default": "Description" },
-    { "type": "header", "content": "Related products" },
-    { "type": "checkbox", "id": "show_related", "label": "Show \"You might also like\"", "default": true },
-    { "type": "text", "id": "related_heading", "label": "Related heading", "default": "You might also like" },
-    { "type": "range", "id": "related_limit", "label": "Related products to show", "min": 2, "max": 8, "step": 1, "default": 4 }
+    { "type": "text", "id": "description_label", "label": "Description accordion label", "default": "Description" }
   ],
   "blocks": [
     {

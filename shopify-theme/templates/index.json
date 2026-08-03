@@ -26,7 +26,9 @@
     },
     "featured": {
       "type": "featured-collection",
-      "settings": {}
+      "settings": {
+        "collection": "new-arrivals"
+      }
     }
   },
   "order": ["intro", "categories", "lifestyle", "black-series", "affiliate", "featured"]

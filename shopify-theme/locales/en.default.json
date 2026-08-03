@@ -38,6 +38,7 @@
       "subtotal": "Subtotal",
       "checkout": "Checkout",
       "remove": "Remove",
+      "close": "Close cart",
       "continue_shopping": "Continue shopping"
     }
   }

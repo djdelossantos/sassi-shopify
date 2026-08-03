@@ -16,16 +16,32 @@
         {%- endif -%}
       {%- endform -%}
     </div>
-    <div class="site-footer__links">
+    {%- comment -%} Count the columns that will actually render, so the grid sizes
+      itself to 3 or 4 (or however many the merchant adds) instead of a fixed 3. {%- endcomment -%}
+    {%- liquid
+      assign visible_cols = 0
+      for block in section.blocks
+        assign bl_menu = linklists[block.settings.menu]
+        if bl_menu.links.size > 0
+          assign visible_cols = visible_cols | plus: 1
+        endif
+      endfor
+    -%}
+    <div class="site-footer__links" style="--footer-cols: {{ visible_cols | at_least: 1 }}">
       {%- for block in section.blocks -%}
-        <div class="site-footer__col" {{ block.shopify_attributes }}>
-          <h3>{{ block.settings.heading }}</h3>
-          <ul>
-            {%- for link in linklists[block.settings.menu].links -%}
-              <li><a href="{{ link.url }}">{{ link.title }}</a></li>
-            {%- endfor -%}
-          </ul>
-        </div>
+        {%- assign col_menu = linklists[block.settings.menu] -%}
+        {%- comment -%} Skip columns whose menu is missing or empty — a lone heading
+          over nothing reads as broken. Shows again as soon as the menu has links. {%- endcomment -%}
+        {%- if col_menu.links.size > 0 -%}
+          <div class="site-footer__col" {{ block.shopify_attributes }}>
+            <h3>{{ block.settings.heading }}</h3>
+            <ul>
+              {%- for link in col_menu.links -%}
+                <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- endif -%}
       {%- endfor -%}
     </div>
   </div>

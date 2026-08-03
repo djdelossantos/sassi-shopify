@@ -90,6 +90,28 @@ h1, h2, h3, h4, p { font-weight: inherit; }
 .site-header.is-open .site-header__burger-open { display: none; }
 .site-header.is-open .site-header__burger-close { display: block; }
 
+/* Expanding search panel. The 0fr -> 1fr grid row animates the panel's height
+   without needing a hard-coded pixel value, so the bar grows to fit whatever the
+   field needs at any breakpoint. */
+.site-header__search {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.site-header__search-inner { overflow: hidden; min-height: 0; }
+.site-header.is-search-open { height: auto; background: var(--color-bg-inverse); }
+.site-header.is-search-open .site-header__search { grid-template-rows: 1fr; }
+/* the field is the only thing in the panel, so underline it rather than box it */
+.site-header__search form {
+  margin: 0 var(--space-16) var(--space-16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+.site-header__search-input {
+  width: 100%; background: none; border: 0; color: var(--color-white-100);
+  font-family: inherit; font-size: var(--font-size-24); padding: var(--space-8) 0;
+}
+.site-header__search-input::placeholder { color: var(--color-white-100); opacity: 0.45; }
+.site-header__search-input:focus { outline: none; }
+
 .site-header__drawer {
   flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column; gap: var(--space-24);
@@ -444,16 +466,33 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
   .site-header__icons > a:last-child { order: -1; }
   /* PDP and Shop mobile headers: light bar, dark contents (except when the
      menu is open, which stays the full-screen dark drawer). */
-  body.template-product .site-header:not(.is-open),
-  body.template-shop .site-header:not(.is-open) {
+  /* template-collection is Shopify's page_type for the shop listing; the
+     prototype called it template-shop. Both kept so either markup works.
+     :not(.is-search-open) so the dark search panel isn't overridden here. */
+  body.template-product .site-header:not(.is-open):not(.is-search-open),
+  body.template-collection .site-header:not(.is-open):not(.is-search-open),
+  body.template-shop .site-header:not(.is-open):not(.is-search-open) {
     background: rgba(255, 255, 255, 0.85);
     color: var(--color-text-primary);
   }
-  body.template-product .site-header:not(.is-open) .site-header__logo-mark,
-  body.template-shop .site-header:not(.is-open) .site-header__logo-mark {
+  body.template-product .site-header:not(.is-open):not(.is-search-open) .site-header__logo-mark,
+  body.template-collection .site-header:not(.is-open):not(.is-search-open) .site-header__logo-mark,
+  body.template-shop .site-header:not(.is-open):not(.is-search-open) .site-header__logo-mark {
     background: var(--color-text-primary);
   }
 }
+/* Bag count badge — inherits the header's current colour so it stays legible
+   through the light/dark section switching. */
+.site-header__bag { position: relative; }
+.site-header__bag-count {
+  position: absolute; top: -6px; right: -8px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: var(--color-bg-brand);
+  color: var(--color-white-100);
+  font-size: var(--font-size-12); font-weight: var(--font-weight-600); line-height: 1;
+}
+.site-header__bag-count[hidden] { display: none; }
 .site-header__icons a.site-header__account { display: none; }
 
 /* ---- PDP ---- */
@@ -543,6 +582,15 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .site-header--hidden { transform: translateY(-100%); }
   .site-header.is-open { height: auto; }
   .site-header__drawer { display: none; }
+  /* Search open: the bar has no background of its own out here, so it needs a
+     solid one behind the field. Beats --no-scrim on specificity (2 classes vs 1). */
+  .site-header.is-search-open { background: var(--color-bg-inverse); }
+  /* ...and with a dark bar the per-section colouring must not win — force the
+     light treatment while it's open (JS pins --logo-split to match). */
+  .site-header.is-search-open .site-header__left,
+  .site-header.is-search-open .site-header__icons { color: var(--color-white-100); }
+  .site-header__search form { margin: 0 var(--space-32) var(--space-24); }
+  .site-header__search-input { font-size: var(--font-size-32); }
   /* Nothing dark under the bar: drop the scrim (it would grey a white section) */
   .site-header--no-scrim {
     background: linear-gradient(to bottom, rgba(18, 16, 14, 0) 0%, rgba(18, 16, 14, 0) 100%);
@@ -673,7 +721,9 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .site-footer__join-title { font-size: var(--font-size-32); }
   .site-footer__links {
     flex: 0 0 61%;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    /* --footer-cols is set inline by the footer section from the rendered column
+       count; 3 is the design's baseline if the variable is ever absent. */
+    display: grid; grid-template-columns: repeat(var(--footer-cols, 3), 1fr); gap: 0;
   }
   .site-footer__col ul { grid-template-columns: 1fr; }
   .site-footer__col li a { font-size: var(--font-size-16); }
@@ -742,19 +792,176 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   white-space: nowrap; transition: color 0.2s ease;
 }
 .shop__type.is-active { color: var(--color-bg-brand); }
+/* tabs render as <a> when they drive real filtering, <button> otherwise */
+a.shop__type { text-decoration: none; white-space: nowrap; }
 .shop__filters {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px;
   font-size: var(--font-size-16); color: var(--color-text-primary);
 }
 .shop__filters .icon { width: 20px; height: 20px; }
-.shop__filter-panel { padding: var(--space-16); border-top: 1px solid var(--color-border-subtle); }
-.shop__filter-panel[hidden] { display: none; }
+/* Mobile: the panel is a plain stacked block that collapses to nothing. */
+.shop__filter-panel {
+  display: grid; grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.45s;
+}
+.shop.is-filtering .shop__filter-panel {
+  grid-template-rows: 1fr; visibility: visible; transition-delay: 0s, 0s;
+  border-top: 1px solid var(--color-border-subtle);
+}
+/* Pure clipper — it must carry NO padding or border of its own. A 0fr row zeroes
+   the content height, but padding lives outside that box and would survive the
+   collapse as a residual band that pushes the grid down. Spacing goes on the
+   child instead, which the clip actually hides. */
+.shop__filter-inner { overflow: hidden; min-height: 0; }
+.shop__filter-inner > * { padding: var(--space-16); }
 .shop__filter-note { font-size: var(--font-size-14); color: var(--color-text-secondary); }
+/* Filter groups reuse the PDP .accordion component wholesale — only the body's
+   text colour is overridden, since filter labels are controls, not prose. */
+.shop__filter-groups { display: block; }
+.shop__filter-body { color: var(--color-text-primary); }
+.shop__filter-values { display: flex; flex-direction: column; gap: 6px; }
+.shop__filter-value {
+  display: flex; align-items: center; gap: var(--space-8);
+  font-size: var(--font-size-14); cursor: pointer;
+}
+.shop__filter-value.is-disabled { opacity: 0.4; cursor: default; }
+.shop__filter-label { flex: 1 1 auto; }
+.shop__filter-count { color: var(--color-text-secondary); font-size: var(--font-size-12); }
+/* Min/max sit side by side, each with its own caption above the field. */
+.shop__filter-price { display: flex; gap: var(--space-8); }
+.shop__price-field { flex: 1 1 0; min-width: 0; }
+.shop__price-label {
+  display: block; margin-bottom: 4px;
+  font-size: var(--font-size-12); color: var(--color-text-secondary);
+}
+.shop__filter-price input {
+  width: 100%; min-width: 0; font-family: inherit; font-size: var(--font-size-14);
+  /* narrower side-by-side box — 16px side padding would crowd the digits */
+  padding: var(--space-8); border: 1px solid var(--color-border-default);
+  background: none; color: var(--color-text-primary);
+}
+.shop__filter-price input::placeholder { color: var(--color-text-secondary); opacity: 0.7; }
+.shop__filter-price input:focus { outline: none; border-color: var(--color-text-primary); }
+.shop__filter-actions {
+  display: flex; gap: var(--space-8);
+  margin-top: var(--space-24);
+  border-top: 1px solid var(--color-border-subtle);
+}
+/* Equal halves. .btn keeps its label-left / arrow-right structure; only the
+   type size is stepped down for the narrower box. */
+.shop__filter-actions .btn {
+  flex: 1 1 0; min-width: 0;
+  font-size: var(--font-size-14);
+}
+/* Kept in place rather than removed so the row doesn't reflow when the last
+   filter is cleared. */
+.shop__filter-clear.is-disabled { opacity: 0.4; pointer-events: none; }
+/* dim the grid while a filtered set is being fetched */
+[data-shop-section][data-loading] .shop__grid {
+  opacity: 0.4; transition: opacity 0.2s ease; pointer-events: none;
+}
 .shop__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-24) 12px; padding: 0 var(--space-16); }
 .shop__cell[hidden] { display: none; }
 .shop__loadmore { display: flex; justify-content: center; padding-top: var(--space-32); }
 .shop__loadmore .btn { width: auto; min-width: 240px; }
 .shop__loadmore[data-exhausted] { display: none; }
+/* Spans the whole grid and centres, so it doesn't sit orphaned in column 1. */
+.shop__empty {
+  grid-column: 1 / -1; text-align: center;
+  padding: var(--space-64) var(--space-16);
+  color: var(--color-text-secondary);
+}
+/* ===================== Cart drawer ===================== */
+.cart-drawer { position: fixed; inset: 0; z-index: 200; }
+.cart-drawer[hidden] { display: none; }
+.cart-drawer__scrim {
+  position: absolute; inset: 0; background: rgba(18, 16, 14, 0.5);
+  opacity: 0; transition: opacity 0.35s ease;
+  /* blurs the page behind the panel, as in the reference */
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.cart-drawer.is-open .cart-drawer__scrim { opacity: 1; }
+.cart-drawer__panel {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: min(440px, 100%);
+  background: var(--color-bg-inverse); color: var(--color-white-100);
+  display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cart-drawer.is-open .cart-drawer__panel { transform: translateX(0); }
+
+.cart-drawer__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-16); padding: var(--space-24) var(--space-24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+.cart-drawer__title { font-size: var(--font-size-18); font-weight: var(--font-weight-700); }
+.cart-drawer__count { font-weight: var(--font-weight-400); opacity: 0.6; }
+.cart-drawer__close { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__close:hover { color: var(--color-bg-brand); }
+
+.cart-drawer__items {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--space-24); display: flex; flex-direction: column; gap: var(--space-24);
+}
+.cart-drawer__item { display: flex; gap: var(--space-16); }
+.cart-drawer__item-media {
+  flex: 0 0 96px; width: 96px; height: 96px;
+  background: var(--color-bg-subtle); display: block; overflow: hidden;
+}
+.cart-drawer__item-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cart-drawer__item-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cart-drawer__item-top { display: flex; justify-content: space-between; gap: var(--space-16); }
+.cart-drawer__item-title { font-size: var(--font-size-16); line-height: 1.3; }
+.cart-drawer__item-title:hover { color: var(--color-bg-brand); }
+.cart-drawer__item-price { font-size: var(--font-size-16); white-space: nowrap; text-align: right; }
+.cart-drawer__item-price s { display: block; opacity: 0.45; font-size: var(--font-size-14); }
+.cart-drawer__item-variant { font-size: var(--font-size-14); opacity: 0.6; }
+.cart-drawer__item-controls {
+  margin-top: var(--space-8); display: flex; align-items: center;
+  justify-content: space-between; gap: var(--space-16);
+}
+.cart-drawer__qty {
+  display: inline-flex; align-items: center; gap: var(--space-8);
+  border: 1px solid rgba(255, 255, 255, 0.25); padding: var(--space-8);
+}
+.cart-drawer__qty button { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__qty button:hover { color: var(--color-bg-brand); }
+.cart-drawer__qty .icon { width: 16px; height: 16px; }
+.cart-drawer__qty-value { min-width: 20px; text-align: center; font-size: var(--font-size-14); }
+.cart-drawer__remove { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__remove:hover { color: var(--color-bg-brand); }
+
+.cart-drawer__foot { padding: var(--space-24); border-top: 1px solid rgba(255, 255, 255, 0.15); }
+.cart-drawer__total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: var(--font-size-24); font-weight: var(--font-weight-600);
+}
+/* <strong> would otherwise pull the number back to bold */
+.cart-drawer__total strong { font-weight: var(--font-weight-600); }
+.cart-drawer__tax { font-size: var(--font-size-14); opacity: 0.6; margin-top: 4px; }
+.cart-drawer__checkout { width: 100%; margin-top: var(--space-16); }
+
+.cart-drawer__empty {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: var(--space-24); padding: var(--space-32); text-align: center;
+}
+body.has-cart-open { overflow: hidden; }
+
+/* Bare /search fallback form (no query yet, or no JS for the header panel) */
+.shop__search-form { display: flex; gap: var(--space-16); align-items: center; flex-wrap: wrap; padding: 0 var(--space-16); }
+.shop__search-input {
+  flex: 1 1 240px; background: none; border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  font-family: inherit; font-size: var(--font-size-24);
+  color: var(--color-text-primary); padding: var(--space-8) 0;
+}
+.shop__search-input:focus { outline: none; border-bottom-color: var(--color-text-primary); }
+/* Server pager — only appears past the first paginated page. */
+.shop__pagination { display: flex; justify-content: center; padding-top: var(--space-32); }
+.shop__pagination .pagination { display: flex; gap: var(--space-16); font-size: var(--font-size-14); }
+.shop__pagination a:hover { color: var(--color-bg-brand); }
 
 @media (max-width: 899px) {
   .shop { padding-top: 60px; }
@@ -774,6 +981,32 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .shop__title { font-size: var(--font-size-24); }
   /* full-bleed product grid: 4 cols, 16px gutters, 24px rows */
   .shop__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-24) var(--space-16); padding: var(--space-24) 0 0; }
+  /* Desktop: filters drop over the grid from under the toolbar button rather than
+     pushing it. Nothing below reflows, so the grid never jumps under the cursor. */
+  .shop__body { position: relative; }
+  .shop__main { min-width: 0; }
+  .shop__filter-panel {
+    position: absolute; top: 0; right: 0; z-index: 20;
+    width: 320px; border-top: 0;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-primary);
+    display: block; overflow: visible;
+    opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0.25s;
+  }
+  .shop.is-filtering .shop__filter-panel {
+    opacity: 1; transform: translateY(0); visibility: visible; transition-delay: 0s, 0s, 0s;
+  }
+  /* With GSAP running, the timeline owns opacity/visibility/transform — leaving
+     the CSS transition on would animate GSAP's own inline writes a second time. */
+  html.has-gsap .shop__filter-panel { transition: none; }
+  /* Desktop panel is absolutely positioned, not clipped by a grid row, so the
+     padding can sit on the wrapper again. */
+  .shop__filter-inner { width: auto; padding: var(--space-8); }
+  .shop__filter-inner > * { padding: 0; }
+  /* One column in a narrow panel reads better than the auto-fit grid. */
+  /* groups stack in the dropdown at every size now — nothing to override */
 }
 
 /* ---- Reduced motion ---- */

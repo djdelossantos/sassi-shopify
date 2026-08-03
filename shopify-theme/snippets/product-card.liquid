@@ -25,7 +25,11 @@
       -%}
       {%- if color_option -%}
         <span class="product-card__swatches">
-          {%- for v in color_option.values -%}<span class="dot dot--{{ v | downcase | handle }}"></span>{%- endfor -%}
+          {%- for v in color_option.values -%}
+            {%- capture sw_style -%}{% render 'swatch-style', value: v %}{%- endcapture -%}
+            {%- assign vname = v.name | default: v -%}
+            <span class="dot" style="{{ sw_style | strip }}" title="{{ vname | escape }}"></span>
+          {%- endfor -%}
         </span>
       {%- endif -%}
     </div>

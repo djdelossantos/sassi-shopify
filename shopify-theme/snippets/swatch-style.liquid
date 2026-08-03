@@ -1,0 +1,44 @@
+{%- comment -%}
+  Returns the inline `style` for one colour swatch. Shared by the PDP swatches and
+  the product-card dots so both fill the same way. Params: value (a product option
+  value — an object with a native .swatch on newer Shopify, a plain string on older).
+
+  Fill priority: merchant-set Shopify swatch (image, then colour) -> the SASSi
+  colour map -> a neutral grey, so an unmapped colour name is always visible
+  rather than rendering as an invisible circle.
+
+  Usage:
+    {%- capture sw_style -%}{% render 'swatch-style', value: v %}{%- endcapture -%}
+    <span class="dot" style="{{ sw_style | strip }}"></span>
+{%- endcomment -%}
+{%- liquid
+  assign vname = value.name | default: value
+  assign vhandle = vname | downcase | handle
+  if value.swatch.image
+    assign sw_style = value.swatch.image | image_url: width: 48 | prepend: 'background-image:url(' | append: ');background-size:cover'
+  elsif value.swatch.color
+    assign sw_style = value.swatch.color | prepend: 'background:'
+  else
+    case vhandle
+      when 'black'
+        assign sw_style = 'background:var(--color-obsidian-black-100)'
+      when 'grey', 'gray'
+        assign sw_style = 'background:var(--color-neutral-grey-50)'
+      when 'warm-grey', 'warm-gray'
+        assign sw_style = 'background:#8b7153'
+      when 'bronze', 'tan'
+        assign sw_style = 'background:var(--color-bronze-100)'
+      when 'olive'
+        assign sw_style = 'background:var(--color-olive-100)'
+      when 'crimson'
+        assign sw_style = 'background:var(--color-crimson-100)'
+      when 'red'
+        assign sw_style = 'background:var(--color-sassi-red-100)'
+      when 'white', 'beige'
+        assign sw_style = 'background:#efece4;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'
+      else
+        assign sw_style = 'background:#cccccc'
+    endcase
+  endif
+-%}
+{{- sw_style -}}

@@ -1,28 +1,66 @@
-<section class="search" data-section="search" data-section-theme="light">
-  <div class="search__inner">
-    <h1 class="search__title">{{ 'general.search.search' | t }}</h1>
-    <form action="{{ routes.search_url }}" method="get" role="search" class="search__form">
-      <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'general.search.placeholder' | t }}" aria-label="{{ 'general.search.placeholder' | t }}">
-      <button type="submit" class="btn btn--dark"><span class="btn__label">{{ 'general.search.search' | t }}</span><span class="btn__icon">{% render 'icon', name: 'search' %}</span></button>
-    </form>
+{%- comment -%}
+  Search results — same shell as the shop listing (.shop) so results read exactly
+  like a collection, minus the type tabs and filter layer. The heading is the
+  search term and the count sits opposite it, matching .shop__head.
+  Load More is client-side and shared with the shop page (initShop in theme.js).
+{%- endcomment -%}
+{%- liquid
+  assign page_size = 8
+-%}
+<section class="shop" data-section-theme="light">
+  {%- if search.performed -%}
+    <div class="shop__label">
+      <div class="shop__head">
+        <h1 class="shop__title">{{ search.terms }}</h1>
+        <p class="shop__count" data-shop-count>{{ search.results_count }} products</p>
+      </div>
+    </div>
 
-    {%- if search.performed -%}
-      {%- if search.results_count > 0 -%}
-        <p class="search__count">{{ 'general.search.results_count' | t: count: search.results_count }}</p>
-        <div class="product-grid__items">
-          {%- for item in search.results -%}
-            {%- if item.object_type == 'product' -%}
+    {%- paginate search.results by 24 -%}
+      <div class="shop__grid" data-shop-grid>
+        {%- for item in search.results -%}
+          {%- comment -%} Our forms scope to products, but a hand-built /search?q=
+            link can still return pages/articles — those would render as empty
+            cards, so skip anything that isn't a product. {%- endcomment -%}
+          {%- if item.object_type == 'product' -%}
+            <div class="shop__cell"{% if forloop.index0 >= page_size %} hidden{% endif %}>
               {% render 'product-card', product: item %}
-            {%- else -%}
-              <a class="search__result" href="{{ item.url }}">{{ item.title }}</a>
-            {%- endif -%}
-          {%- endfor -%}
+            </div>
+          {%- endif -%}
+        {%- else -%}
+          <p class="shop__empty">{{ 'general.search.no_results' | t: terms: search.terms }}</p>
+        {%- endfor -%}
+      </div>
+
+      {%- if search.results_count > page_size -%}
+        <div class="shop__loadmore" data-loadmore-wrap>
+          {% render 'button', label: 'Load More', style: 'dark', extra_class: 'shop__loadmore-btn' %}
         </div>
-      {%- else -%}
-        <p class="search__empty">{{ 'general.search.no_results' | t: terms: search.terms }}</p>
       {%- endif -%}
-    {%- endif -%}
-  </div>
+
+      {%- if paginate.pages > 1 -%}
+        <nav class="shop__pagination">{{ paginate | default_pagination }}</nav>
+      {%- endif -%}
+    {%- endpaginate -%}
+  {%- else -%}
+    {%- comment -%} Bare /search — the header panel is the usual way in, but this
+      keeps search reachable when JS hasn't run. {%- endcomment -%}
+    <div class="shop__label">
+      <div class="shop__head">
+        <h1 class="shop__title">{{ 'general.search.search' | t }}</h1>
+      </div>
+    </div>
+    <form action="{{ routes.search_url }}" method="get" role="search" class="shop__search-form">
+      <input type="hidden" name="type" value="product">
+      <input class="shop__search-input" type="search" name="q"
+             placeholder="{{ 'general.search.placeholder' | t }}"
+             aria-label="{{ 'general.search.placeholder' | t }}" autocomplete="off">
+      <button type="submit" class="btn btn--dark">
+        <span class="btn__label">{{ 'general.search.search' | t }}</span>
+        <span class="btn__icon">{% render 'icon', name: 'search' %}</span>
+      </button>
+    </form>
+  {%- endif -%}
 </section>
 
 {% schema %}

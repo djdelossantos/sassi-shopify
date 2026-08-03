@@ -1,3 +1,11 @@
+{%- comment -%}
+  The drawer is the cart now, so /cart bounces to the homepage and opens it
+  (#cart is picked up by initCartDrawer). Inline so it fires before paint.
+  The markup below still renders for anyone without JS — without it this page
+  would be a dead end for them, since the drawer needs JS to exist at all.
+{%- endcomment -%}
+<script>window.location.replace({{ routes.root_url | append: '#cart' | json }});</script>
+
 <section class="cart" data-section="cart" data-section-theme="light">
   <div class="cart__inner">
     <h1 class="cart__title">{{ 'cart.general.title' | t }}</h1>

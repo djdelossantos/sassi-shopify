@@ -1,24 +1,193 @@
-<section class="product-grid" data-section="collection" data-section-theme="light">
-  <div class="product-grid__head">
-    <h1 class="product-grid__heading">{{ collection.title }}</h1>
-    {%- if collection.products_count > 0 -%}
-      <span class="product-grid__count">{{ collection.products_count }} products</span>
-    {%- endif -%}
-  </div>
-  {%- if collection.description != blank -%}
-    <div class="product-grid__desc rte">{{ collection.description }}</div>
-  {%- endif -%}
-  <div class="product-grid__items" data-shop-grid>
-    {%- paginate collection.products by 24 -%}
-      {%- for product in collection.products -%}
-        <div class="shop__cell">{% render 'product-card', product: product %}</div>
+{%- comment -%}
+  Shop / collection listing — mirrors the prototype's Shop All page: title + count,
+  product-type tabs, a filters toggle, the 2/4-up grid and a Load More button.
+  Tabs and Load More are client-side (initShop in theme.js) and bind to
+  [data-shop-types], [data-shop-grid] and .shop__loadmore-btn.
+{%- endcomment -%}
+{%- liquid
+  assign page_size = 8
+  assign type_list = collection.all_types | uniq
+  # Any filter currently applied? Drives the "Clear all" link.
+  assign active_filters = 0
+  for f in collection.filters
+    assign active_filters = active_filters | plus: f.active_values.size
+    if f.min_value.value or f.max_value.value
+      assign active_filters = active_filters | plus: 1
+    endif
+  endfor
+  # Product type is presented as the toolbar tabs, not as a panel group, so the
+  # two can't disagree. Requires the Product type filter to be enabled in
+  # Search & Discovery; without it we fall back to the client-side tabs below.
+  assign type_filter = null
+  for f in collection.filters
+    if f.param_name == 'filter.p.product_type'
+      assign type_filter = f
+    endif
+  endfor
+-%}
+<section class="shop" data-section-theme="light" data-shop-section>
+  <div class="shop__label">
+    <div class="shop__head">
+      <h1 class="shop__title">{{ collection.title }}</h1>
+      <p class="shop__count" data-shop-count>{{ collection.products_count }} products</p>
+    </div>
+    <div class="shop__toolbar">
+      {%- if type_filter -%}
+        {%- comment -%} Real storefront filtering — each tab is a filter URL, so it
+          works across pagination and agrees with the rest of the panel. {%- endcomment -%}
+        <div class="shop__types" aria-label="Product type" data-shop-types data-server-types>
+          <a class="shop__type{% if type_filter.active_values.size == 0 %} is-active{% endif %}"
+             href="{{ type_filter.url_to_remove }}" data-type-link>All Bags</a>
+          {%- for v in type_filter.values -%}
+            <a class="shop__type{% if v.active %} is-active{% endif %}"
+               href="{% if v.active %}{{ v.url_to_remove }}{% else %}{{ v.url_to_add }}{% endif %}"
+               data-type-link>{{ v.label }}</a>
+          {%- endfor -%}
+        </div>
       {%- else -%}
-        <p>No products in this collection yet.</p>
-      {%- endfor -%}
-      {%- if paginate.pages > 1 -%}
-        <nav class="product-grid__pagination">{{ paginate | default_pagination }}</nav>
+        {%- comment -%} Fallback until Product type is enabled in Search & Discovery:
+          client-side tabs over the products on this page. {%- endcomment -%}
+        <div class="shop__types" role="tablist" aria-label="Product type" data-shop-types>
+          <button class="shop__type is-active" role="tab" aria-selected="true" data-type="all">All Bags</button>
+          {%- for t in type_list -%}
+            {%- if t != blank -%}
+              <button class="shop__type" role="tab" aria-selected="false" data-type="{{ t | handle }}">{{ t }}</button>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
       {%- endif -%}
-    {%- endpaginate -%}
+      <button class="shop__filters" data-filters-toggle aria-expanded="false" aria-controls="shop-filters">
+        <span data-filters-label>Filters</span>
+        {% render 'icon', name: 'adjust' %}
+      </button>
+    </div>
+  </div>
+
+  {%- comment -%} Grid and filter sidebar share a row; the sidebar's track animates
+    open and the grid gives way. The panel is first in the DOM but placed in
+    column 2 by CSS, so no markup shuffling is needed. {%- endcomment -%}
+  <div class="shop__body">
+
+  {%- comment -%}
+    Native storefront filters. collection.filters is populated by the filters the
+    merchant configures in Search & Discovery — with none set up it comes back
+    empty and we fall back to the placeholder note.
+    It's a real GET form, so filtering still works without JS; theme.js upgrades
+    it to fetch-and-swap.
+  {%- endcomment -%}
+  <aside class="shop__filter-panel" id="shop-filters" data-filter-panel aria-label="Filters">
+    {%- comment -%} Inner wrapper does the clipping while the track animates open. {%- endcomment -%}
+    <div class="shop__filter-inner">
+    {%- if collection.filters.size > 0 -%}
+      <form class="shop__filter-form" data-filter-form>
+        {%- comment -%} Carry the active sort through, or filtering would reset it. {%- endcomment -%}
+        {%- if collection.sort_by != blank -%}
+          <input type="hidden" name="sort_by" value="{{ collection.sort_by | escape }}">
+        {%- endif -%}
+
+        <div class="shop__filter-groups">
+          {%- for filter in collection.filters -%}
+            {%- comment -%} Rendered as the toolbar tabs instead. {%- endcomment -%}
+            {%- if filter.param_name == 'filter.p.product_type' -%}{%- continue -%}{%- endif -%}
+            {%- liquid
+              # Open the groups the shopper is already using; leave the rest closed
+              # so a long facet list stays scannable.
+              assign group_open = false
+              if filter.active_values.size > 0 or filter.min_value.value or filter.max_value.value
+                assign group_open = true
+              endif
+            -%}
+            {%- comment -%} Same .accordion component as the PDP, for consistency. {%- endcomment -%}
+            <details class="accordion shop__filter-group"{% if group_open %} open{% endif %}>
+              <summary>{{ filter.label }} {% render 'icon', name: 'plus' %}</summary>
+              <div class="accordion__body shop__filter-body">
+
+              {%- case filter.type -%}
+                {%- when 'price_range' -%}
+                  {%- assign price_max = filter.range_max | money_without_currency | replace: ',', '' -%}
+                  <div class="shop__filter-price">
+                    <label class="shop__price-field">
+                      <span class="shop__price-label">Minimum ({{ cart.currency.iso_code | default: shop.currency }})</span>
+                      <input type="number" name="{{ filter.min_value.param_name }}" min="0" max="{{ price_max }}"
+                             {% if filter.min_value.value %}value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+                             placeholder="{{ cart.currency.symbol }}" inputmode="decimal">
+                    </label>
+                    <label class="shop__price-field">
+                      <span class="shop__price-label">Maximum ({{ cart.currency.iso_code | default: shop.currency }})</span>
+                      <input type="number" name="{{ filter.max_value.param_name }}" min="0" max="{{ price_max }}"
+                             {% if filter.max_value.value %}value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+                             placeholder="{{ cart.currency.symbol }}" inputmode="decimal">
+                    </label>
+                  </div>
+
+                {%- else -%}
+                  <ul class="shop__filter-values">
+                    {%- for value in filter.values -%}
+                      <li>
+                        <label class="shop__filter-value{% if value.count == 0 and value.active == false %} is-disabled{% endif %}">
+                          <input type="checkbox" name="{{ value.param_name }}" value="{{ value.value | escape }}"
+                                 {% if value.active %}checked{% endif %}
+                                 {% if value.count == 0 and value.active == false %}disabled{% endif %}>
+                          <span class="shop__filter-label">{{ value.label }}</span>
+                          <span class="shop__filter-count">{{ value.count }}</span>
+                        </label>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+              {%- endcase -%}
+
+              </div>
+            </details>
+          {%- endfor -%}
+        </div>
+
+        {%- comment -%} Both go through the button snippet so they carry the design
+          system's label + animated arrow. Clear resets every facet but keeps the
+          current sort; it stays in place when inactive (dimmed) so the row doesn't
+          reflow as the last filter comes off. {%- endcomment -%}
+        {%- capture clear_url -%}{{ collection.url }}{% if collection.sort_by != blank %}?sort_by={{ collection.sort_by }}{% endif %}{%- endcapture -%}
+        {%- assign clear_class = 'shop__filter-clear' -%}
+        {%- if active_filters == 0 -%}
+          {%- assign clear_class = 'shop__filter-clear is-disabled' -%}
+        {%- endif -%}
+        <div class="shop__filter-actions">
+          {% render 'button', label: 'Apply', style: 'dark', extra_class: 'shop__filter-apply' %}
+          {% render 'button', label: 'Clear', style: 'outline', href: clear_url, extra_class: clear_class %}
+        </div>
+      </form>
+    {%- else -%}
+      <p class="shop__filter-note">Filters coming soon.</p>
+    {%- endif -%}
+    </div>
+  </aside>
+
+  <div class="shop__main">
+  {%- paginate collection.products by 24 -%}
+    <div class="shop__grid" data-shop-grid>
+      {%- for product in collection.products -%}
+        {%- comment -%} Pre-hide past the first page so there's no flash of the full
+          grid before initShop runs; it takes over the visibility from there. {%- endcomment -%}
+        <div class="shop__cell" data-type="{{ product.type | handle }}"{% if forloop.index0 >= page_size %} hidden{% endif %}>
+          {% render 'product-card', product: product %}
+        </div>
+      {%- else -%}
+        <p class="shop__empty">No products in this collection yet.</p>
+      {%- endfor -%}
+    </div>
+
+    {%- if collection.products_count > page_size -%}
+      <div class="shop__loadmore" data-loadmore-wrap>
+        {% render 'button', label: 'Load More', style: 'dark', extra_class: 'shop__loadmore-btn' %}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Load More reveals within the current page; once a collection runs
+      past 24 products the standard pager takes over for the rest. {%- endcomment -%}
+    {%- if paginate.pages > 1 -%}
+      <nav class="shop__pagination">{{ paginate | default_pagination }}</nav>
+    {%- endif -%}
+  {%- endpaginate -%}
+  </div>
   </div>
 </section>
 

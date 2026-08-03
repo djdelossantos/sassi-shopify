@@ -15,13 +15,36 @@
       <span class="site-header__logo-mark" role="img" aria-label="{{ shop.name }}"></span>
     </a>
     <div class="site-header__icons">
-      <a href="{{ routes.search_url }}" aria-label="Search">{% render 'icon', name: 'search' %}</a>
+      {%- comment -%} Stays a real link so it still works without JS; theme.js
+        intercepts the click and expands the header panel instead. {%- endcomment -%}
+      <a href="{{ routes.search_url }}" aria-label="{{ 'general.search.search' | t }}"
+         data-search-toggle aria-expanded="false" aria-controls="header-search">{% render 'icon', name: 'search' %}</a>
       {%- if shop.customer_accounts_enabled -%}
         <a href="{{ routes.account_url }}" aria-label="Account" class="site-header__account">{% render 'icon', name: 'account' %}</a>
       {%- endif -%}
-      <a href="{{ routes.cart_url }}" aria-label="Bag ({{ cart.item_count }})" data-cart-count>{% render 'icon', name: 'bag' %}</a>
+      <a class="site-header__bag" href="{{ routes.cart_url }}" aria-label="Bag ({{ cart.item_count }})" data-cart-count>
+        {% render 'icon', name: 'bag' %}
+        <span class="site-header__bag-count" data-cart-count-value{% if cart.item_count == 0 %} hidden{% endif %}>{{ cart.item_count }}</span>
+      </a>
     </div>
   </div>
+  {%- comment -%} Expanding search panel — collapsed to zero height until the
+    search icon is clicked (see initHeaderSearch). {%- endcomment -%}
+  <div class="site-header__search" id="header-search">
+    <div class="site-header__search-inner">
+      <form action="{{ routes.search_url }}" method="get" role="search">
+        {%- comment -%} Products only — the results page is a product grid and its
+          count has to mean "products". Drop this to search pages/articles too. {%- endcomment -%}
+        <input type="hidden" name="type" value="product">
+        <input class="site-header__search-input" type="search" name="q"
+               placeholder="{{ 'general.search.placeholder' | t }}"
+               aria-label="{{ 'general.search.placeholder' | t }}"
+               autocomplete="off" data-search-input>
+        <button type="submit" class="visually-hidden">{{ 'general.search.search' | t }}</button>
+      </form>
+    </div>
+  </div>
+
   <nav class="site-header__drawer" id="mobile-menu" aria-label="Mobile">
     {%- for link in linklists[section.settings.menu].links -%}
       <a href="{{ link.url }}">{{ link.title }}</a>

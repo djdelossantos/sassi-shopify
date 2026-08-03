@@ -47,39 +47,29 @@
       }
     };
 
-    var introSeen = false;
-    try { introSeen = sessionStorage.getItem("sassi_intro") === "1"; sessionStorage.setItem("sassi_intro", "1"); } catch (e) {}
-
-    if (introSeen) {
-      // Standard navigation: play the full preloader only on the first page of the
-      // session; afterwards reveal immediately (defer one frame so buildMainMotion
-      // has registered this page's reveal hooks first).
-      requestAnimationFrame(function () { firePageReveal(); pre.classList.add("is-done"); });
-    } else if (reducedMotion) {
+    if (reducedMotion) {
       // No count animation; snap to 100 and reveal (without motion) once loaded.
       if (countEl) { countEl.textContent = "100"; }
       var revealRM = function () { setTimeout(finishPre, 400); };
       if (document.readyState === "complete") { revealRM(); }
       else { window.addEventListener("load", revealRM, { once: true }); }
     } else {
+      // Always runs the full 00→100 over a fixed duration, independent of how
+      // fast the document actually loads — the count is the intro, not a
+      // progress readout, so it shouldn't be cut short on a warm cache.
       var preStart = performance.now();
-      var preMin = 1200;                               // always show at least this long
-      var preReady = document.readyState === "complete";
-      window.addEventListener("load", function () { preReady = true; });
-      setTimeout(function () { preReady = true; }, 10000); // safety: never trap the page
-      var preVal = 0;
+      var preDuration = 1800;
       var preFmt = function (n) {
         n = Math.max(0, Math.min(100, Math.round(n)));
         return n < 100 ? ("0" + n).slice(-2) : "100";
       };
       var preTick = function (now) {
-        var elapsed = now - preStart;
-        // Creep toward ~90 while loading; race to 100 once ready and past the min.
-        var target = (preReady && elapsed >= preMin) ? 100 : 90 * (1 - Math.exp(-elapsed / 650));
-        preVal += (target - preVal) * 0.1;
-        if (target === 100 && preVal > 99.3) { preVal = 100; }
-        if (countEl) { countEl.textContent = preFmt(preVal); }
-        if (preVal >= 100) { finishPre(); return; }
+        var t = Math.min(1, (now - preStart) / preDuration);
+        // Ease out so it sprints early and settles onto 100 rather than
+        // ticking at a flat, mechanical rate.
+        var eased = 1 - Math.pow(1 - t, 2.2);
+        if (countEl) { countEl.textContent = preFmt(eased * 100); }
+        if (t >= 1) { finishPre(); return; }
         requestAnimationFrame(preTick);
       };
       requestAnimationFrame(preTick);
@@ -125,6 +115,18 @@
     var raf = 0;
     var headerApply = function () {
       raf = 0;
+      // Search open = the bar is solid dark, so the per-section colouring would
+      // fight it (white text on a light section still sits on our dark panel).
+      // Pin everything to the light-on-dark treatment until it closes.
+      if (header.classList.contains("is-search-open")) {
+        for (var g = 0; g < groups.length; g++) {
+          groups[g].classList.add("on-dark");
+          groups[g].classList.remove("on-light");
+        }
+        if (logoMark) { logoMark.style.setProperty("--logo-split", "100%"); }
+        header.classList.remove("site-header--no-scrim");
+        return;
+      }
       var y = header.offsetHeight * 0.5;
       var allDark = true;
       for (var i = 0; i < groups.length; i++) {
@@ -159,6 +161,9 @@
         menuToggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
         document.body.classList.toggle("has-menu-open", open);
         if (open) header.classList.remove("site-header--hidden");
+        // Only one expanded panel at a time (setSearch is hoisted; may be undefined
+        // if the header has no search field).
+        if (open && typeof setSearch === "function") { setSearch(false); }
       });
       header.querySelectorAll(".site-header__drawer a").forEach(function (a) {
         a.addEventListener("click", function () {
@@ -170,11 +175,64 @@
       });
     }
 
+    // Expanding search panel. The icon stays an <a> to /search so the no-JS path
+    // still works; we intercept the click and grow the bar instead.
+    var searchToggle = header.querySelector("[data-search-toggle]");
+    var searchPanel = header.querySelector(".site-header__search");
+    var searchInput = header.querySelector("[data-search-input]");
+    if (searchToggle && searchPanel && searchInput) {
+      // The panel's height is still CSS (grid 0fr->1fr); GSAP eases the field
+      // itself in behind it so the two read as one move. Separate open/close
+      // tweens so both ease out — see buildFilterTimeline for why.
+      if (motionOn) { gsap.set(searchInput, { autoAlpha: 0, y: 10 }); }
+      var animSearch = function (open) {
+        if (!motionOn) { return; }
+        gsap.to(searchInput, {
+          autoAlpha: open ? 1 : 0, y: open ? 0 : 10,
+          duration: open ? 0.4 : 0.28, ease: "power3.out",
+          delay: open ? 0.1 : 0, overwrite: true
+        });
+      };
+      var setSearch = function (open) {
+        animSearch(open);
+        header.classList.toggle("is-search-open", open);
+        searchToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) {
+          header.classList.remove("site-header--hidden");
+          // Closing the burger menu first — two expanded panels can't coexist.
+          if (header.classList.contains("is-open") && menuToggle) { menuToggle.click(); }
+          searchInput.focus();
+        } else {
+          searchInput.blur();
+        }
+        applyHeaderTheme(); // repaint the icon/logo colours for the new state
+      };
+
+      searchToggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        setSearch(!header.classList.contains("is-search-open"));
+      });
+
+      // Esc closes and hands focus back to the icon that opened it.
+      document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape" || !header.classList.contains("is-search-open")) { return; }
+        setSearch(false);
+        searchToggle.focus();
+      });
+
+      // Clicking away closes it, but never while the user is inside the panel.
+      document.addEventListener("click", function (e) {
+        if (!header.classList.contains("is-search-open")) { return; }
+        if (header.contains(e.target)) { return; }
+        setSearch(false);
+      });
+    }
+
     // Auto-hide on scroll down, reveal on scroll up (mobile-only in CSS)
     var lastY = window.scrollY;
     window.addEventListener("scroll", function () {
       var y = window.scrollY;
-      if (header.classList.contains("is-open")) { lastY = y; return; }
+      if (header.classList.contains("is-open") || header.classList.contains("is-search-open")) { lastY = y; return; }
       if (y > lastY && y > 80) header.classList.add("site-header--hidden");
       else if (y < lastY) header.classList.remove("site-header--hidden");
       lastY = y;
@@ -267,6 +325,30 @@
       var sel = g.querySelector("[data-option-select]");
       if (sel) { sel.addEventListener("change", update); }
     });
+
+    // Add to bag without leaving the page, then slide the drawer in. If the
+    // request fails we fall back to a normal form post so the shopper is never
+    // stuck with a button that silently does nothing.
+    form.addEventListener("submit", function (e) {
+      if (!document.querySelector("[data-cart-drawer]")) { return; } // no drawer: native post
+      e.preventDefault();
+      var busyLabel = addLabel ? addLabel.textContent : "";
+      if (addBtn) { addBtn.disabled = true; }
+      fetch("/cart/add.js", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: new FormData(form)
+      })
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(res); })
+        .then(function () { return cartDrawer.refresh(); })
+        .then(function () {
+          cartDrawer.open();
+          if (addBtn) { addBtn.disabled = false; }
+          if (addLabel) { addLabel.textContent = busyLabel; }
+        })
+        .catch(function () { form.submit(); });
+    });
+
     update();
   }
 
@@ -351,7 +433,9 @@
     };
 
     var types = document.querySelector("[data-shop-types]");
-    if (types) {
+    // data-server-types = the tabs are real filter links handled in
+    // initShopFilters; the client-side type filtering below must stay out of it.
+    if (types && !types.hasAttribute("data-server-types")) {
       types.querySelectorAll(".shop__type").forEach(function (tab) {
         tab.addEventListener("click", function () {
           types.querySelectorAll(".shop__type").forEach(function (t) {
@@ -365,14 +449,46 @@
       });
     }
 
+    // Filter dropdown. .is-filtering still carries the state (CSS needs it for
+    // visibility and the no-motion path), but when GSAP is available the panel
+    // and its groups are orchestrated by a timeline instead of CSS transitions.
     var filtersToggle = document.querySelector("[data-filters-toggle]");
-    var filterPanel = document.querySelector("[data-filter-panel]");
-    if (filtersToggle && filterPanel) {
-      filtersToggle.addEventListener("click", function () {
-        var open = filterPanel.hasAttribute("hidden");
-        filterPanel.toggleAttribute("hidden", !open);
+    var shopSection = document.querySelector("[data-shop-section]");
+    if (filtersToggle && shopSection) {
+      var filtersLabel = filtersToggle.querySelector("[data-filters-label]");
+      var filterTl = buildFilterTimeline(shopSection);
+      var setFilters = function (open) {
+        shopSection.classList.toggle("is-filtering", open);
         filtersToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        if (filtersLabel) { filtersLabel.textContent = open ? "Hide filters" : "Filters"; }
+        if (filterTl) { filterTl.set(open); }
+      };
+      filtersToggle.addEventListener("click", function (e) {
+        e.stopPropagation(); // don't let the outside-click handler undo this
+        setFilters(!shopSection.classList.contains("is-filtering"));
       });
+
+      // It's a dropdown now, so it should dismiss like one. Bound once on
+      // document — initShop re-runs after every filtered swap, and a listener
+      // per swap would pile up.
+      shopFiltersClose = function () { setFilters(false); filtersToggle.focus(); };
+      if (!filterDismissBound) {
+        filterDismissBound = true;
+        document.addEventListener("click", function (e) {
+          var sec = document.querySelector("[data-shop-section]");
+          if (!sec || !sec.classList.contains("is-filtering")) { return; }
+          var panel = sec.querySelector("[data-filter-panel]");
+          if (panel && panel.contains(e.target)) { return; }
+          if (shopFiltersClose) { shopFiltersClose(); }
+        });
+        document.addEventListener("keydown", function (e) {
+          var sec = document.querySelector("[data-shop-section]");
+          if (e.key !== "Escape" || !sec || !sec.classList.contains("is-filtering")) { return; }
+          if (shopFiltersClose) { shopFiltersClose(); }
+        });
+      }
+      // Re-opened by initShopFilters after a filtered swap, so honour that here.
+      if (shopSection.hasAttribute("data-filters-open")) { setFilters(true); }
     }
 
     var loadMoreBtn = document.querySelector(".shop__loadmore-btn");
@@ -383,8 +499,180 @@
       });
     }
 
+    initShopFilters();
     shopApply();
   }
+
+  // Orchestrated open/close for the filter dropdown. The panel eases open while
+  // its groups stagger in behind it; closing runs the stagger from the far end
+  // so the motion mirrors.
+  //
+  // GSAP 3.15's easeReverse would express this as one reversible timeline, but
+  // we're pinned to 3.12.5 (3.15 broke the preloader counter and Lenis). So
+  // instead of reverse()-ing a timeline — which would run power3.out backwards
+  // as a power3.in and make the panel look like it falls shut — open and close
+  // are separate tweens that each ease OUT, with overwrite handling interruption.
+  function buildFilterTimeline(section) {
+    if (!motionOn) { return null; } // CSS handles the no-motion / reduced-motion path
+    var panel = section.querySelector("[data-filter-panel]");
+    if (!panel) { return null; }
+    var groups = [].slice.call(
+      panel.querySelectorAll(".shop__filter-group, .shop__filter-actions, .shop__filter-note")
+    );
+    // The dropdown only exists at >=900px; below that the panel is an in-flow
+    // block that CSS collapses on a grid row, which GSAP shouldn't touch.
+    var mq = window.matchMedia("(min-width: 900px)");
+    var targets = [panel].concat(groups);
+    var primed = false;
+
+    var prime = function () {
+      gsap.set(panel, { autoAlpha: 0, y: -8 });
+      if (groups.length) { gsap.set(groups, { autoAlpha: 0, y: 12 }); }
+      primed = true;
+    };
+
+    return {
+      set: function (open) {
+        if (!mq.matches) {
+          // Resized down to mobile — hand control back to CSS and clear anything
+          // GSAP left inline, or the panel would sit stuck at its tweened values.
+          if (primed) {
+            gsap.killTweensOf(targets);
+            gsap.set(targets, { clearProps: "all" });
+            primed = false;
+          }
+          return;
+        }
+        if (!primed) { prime(); }
+
+        if (open) {
+          gsap.to(panel, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out", overwrite: true });
+          if (groups.length) {
+            gsap.to(groups, {
+              autoAlpha: 1, y: 0, duration: 0.45, ease: "power2.out", overwrite: true,
+              delay: 0.08, // let the panel start opening before its contents arrive
+              stagger: { each: 0.06, from: "start" }
+            });
+          }
+        } else {
+          // Mirrored: contents leave from the far end first, panel follows.
+          if (groups.length) {
+            gsap.to(groups, {
+              autoAlpha: 0, y: 12, duration: 0.3, ease: "power2.out", overwrite: true,
+              stagger: { each: 0.04, from: "end" }
+            });
+          }
+          gsap.to(panel, {
+            autoAlpha: 0, y: -8, duration: 0.35, ease: "power3.out", overwrite: true,
+            delay: groups.length ? 0.06 : 0
+          });
+        }
+      }
+    };
+  }
+
+  // Storefront filters. The panel is a real GET form (works with JS off); here we
+  // intercept it, fetch the filtered collection URL and swap the whole .shop
+  // section in, so the page doesn't reload and the filter panel stays open.
+  function initShopFilters() {
+    var section = document.querySelector("[data-shop-section]");
+    if (!section) { return; }
+    var form = document.querySelector("[data-filter-form]");
+
+    var render = function (url, push) {
+      // Preserve whatever the panel was doing: open stays open across a filter
+      // change, closed stays closed when a type tab is what triggered this.
+      var wasOpen = section.classList.contains("is-filtering");
+      section.setAttribute("data-loading", "");
+      return fetch(url)
+        .then(function (res) { return res.ok ? res.text() : Promise.reject(res.status); })
+        .then(function (text) {
+          var parsed = document.createElement("div");
+          parsed.innerHTML = text;
+          var fresh = parsed.querySelector("[data-shop-section]");
+          if (!fresh) { return; }
+          section.innerHTML = fresh.innerHTML;
+          if (push) { history.pushState({}, "", url); }
+          // Flag before re-init so initShop restores the panel's prior state
+          // rather than snapping it shut on every swap.
+          if (wasOpen) {
+            section.setAttribute("data-filters-open", "");
+            section.classList.add("is-filtering");
+          } else {
+            section.removeAttribute("data-filters-open");
+          }
+          // Everything inside is new DOM, so re-bind from scratch. Old listeners
+          // died with the markup they were attached to.
+          initShop();
+          initAccordions(); // filter groups are .accordion — new DOM needs re-binding
+          revealInjected(section);
+          if (motionOn) { ScrollTrigger.refresh(); }
+        })
+        .catch(function () { window.location.href = url; }) // fall back to a real navigation
+        .then(function () { section.removeAttribute("data-loading"); });
+    };
+
+    var submit = function () {
+      var params = new URLSearchParams(new FormData(form));
+      // Drop empty price inputs so they don't become "filter.v.price.gte="
+      var clean = new URLSearchParams();
+      params.forEach(function (v, k) { if (v !== "") { clean.append(k, v); } });
+      var qs = clean.toString();
+      render(window.location.pathname + (qs ? "?" + qs : ""), true);
+    };
+
+    // The panel only exists once filters are configured in Search & Discovery;
+    // the type tabs below work regardless.
+    if (form) {
+      // Without JS the form GETs here, which drops any existing filter params —
+      // exactly what we want, since the checkboxes carry the full new state.
+      form.setAttribute("action", window.location.pathname);
+      // Filters are applied explicitly via the Apply button — no auto-apply on
+      // change, or the button would be decorative and the grid would churn on
+      // every checkbox. Enter inside the form submits it as usual.
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submit();
+      });
+
+    }
+
+    // Product-type tabs are plain filter links. preventDefault also stops the
+    // page-transition router (it bails on defaultPrevented), so switching type
+    // swaps the grid instead of playing a full-page sweep.
+    section.querySelectorAll("[data-type-link]").forEach(function (tab) {
+      tab.addEventListener("click", function (e) {
+        e.preventDefault();
+        render(tab.getAttribute("href"), true);
+      });
+    });
+
+    // Matched by class — the button snippet renders the element, so it can't
+    // carry a data- hook of its own.
+    var clear = section.querySelector(".shop__filter-clear");
+    if (clear) {
+      clear.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (clear.classList.contains("is-disabled")) { return; } // nothing to clear
+        render(clear.getAttribute("href"), true);
+      });
+    }
+
+    // Back/forward should move through filter states, not out of the page.
+    // Bound once on window — initShopFilters re-runs after every swap, and a
+    // listener per swap would stack up and fire render() repeatedly.
+    shopFilterRender = render;
+    if (!popstateBound) {
+      popstateBound = true;
+      window.addEventListener("popstate", function () {
+        if (shopFilterRender) { shopFilterRender(window.location.href, false); }
+      });
+    }
+  }
+  var popstateBound = false;
+  var shopFilterRender = null;
+  var filterDismissBound = false;
+  var shopFiltersClose = null;
 
   // Hero carousel — crossfades between multiple media slides. Inert for a single
   // slide (static hero). Videos autoplay muted/loop via markup. Respects reduced
@@ -487,20 +775,249 @@
         e.preventDefault();
         if (details._busy) { return; }
         if (!details.open) {
-          // collapse any open sibling in the same group first (single-open)
-          var group = details.closest(".pdp__accordions") || document;
-          group.querySelectorAll(".accordion.is-open").forEach(function (other) {
-            if (other !== details && !other._busy && other._body) {
-              other._busy = true;
-              close(other, other._body);
-            }
-          });
+          // Single-open is a PDP behaviour, scoped to .pdp__accordions. Elsewhere
+          // (e.g. the shop filter groups) accordions open independently.
+          var group = details.closest(".pdp__accordions");
+          if (group) {
+            group.querySelectorAll(".accordion.is-open").forEach(function (other) {
+              if (other !== details && !other._busy && other._body) {
+                other._busy = true;
+                close(other, other._body);
+              }
+            });
+          }
           details._busy = true;
           open(details, body);
         } else {
           details._busy = true;
           close(details, body);
         }
+      });
+    });
+  }
+
+  /* ===================== Cart drawer ===================== */
+  // Lives in the layout, so it survives every page. All cart mutations go through
+  // the /cart/*.js endpoints, then we re-fetch the rendered section and swap its
+  // markup in — that keeps money formatting and line-item logic in Liquid rather
+  // than rebuilding it in JS.
+  var cartDrawer = {
+    open: function () {},
+    refresh: function () { return Promise.resolve(); }
+  };
+
+  function initCartDrawer() {
+    var root = document.querySelector("[data-cart-drawer]");
+    if (!root) { return; }
+    // The drawer lives in the layout, so it persists across page swaps. Its
+    // listeners are delegated from this root — re-binding on every navigation
+    // would stack them up.
+    if (root.hasAttribute("data-cart-bound")) { return; }
+    root.setAttribute("data-cart-bound", "");
+    var lastFocus = null;
+
+    var open = function () {
+      lastFocus = document.activeElement;
+      root.hidden = false;
+      // next frame so the transition has a from-state to animate out of
+      requestAnimationFrame(function () { root.classList.add("is-open"); });
+      document.body.classList.add("has-cart-open");
+      if (lenis) { lenis.stop(); }
+      var closeBtn = root.querySelector(".cart-drawer__close");
+      if (closeBtn) { closeBtn.focus(); }
+    };
+
+    var close = function () {
+      root.classList.remove("is-open");
+      document.body.classList.remove("has-cart-open");
+      if (lenis) { lenis.start(); }
+      var done = function () { root.hidden = true; };
+      // hide only after the slide-out finishes, so it doesn't just vanish
+      var panel = root.querySelector(".cart-drawer__panel");
+      if (panel) { panel.addEventListener("transitionend", done, { once: true }); }
+      else { done(); }
+      if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+    };
+
+    // Pull the freshly rendered drawer and swap the panel's contents.
+    var refresh = function () {
+      return fetch(root.getAttribute("data-cart-section-url") || "/?sections=cart-drawer")
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(res.status); })
+        .then(function (data) {
+          var markup = data["cart-drawer"];
+          if (!markup) { return; }
+          var parsed = document.createElement("div");
+          parsed.innerHTML = markup;
+          var fresh = parsed.querySelector("[data-cart-panel]");
+          var current = root.querySelector("[data-cart-panel]");
+          if (fresh && current) { current.innerHTML = fresh.innerHTML; }
+          syncCount(parsed);
+        })
+        .catch(function () {});
+    };
+
+    // Keep the header bag badge in step with the cart. The count comes off the
+    // freshly rendered drawer root, so Liquid stays the single source of truth.
+    var syncCount = function (parsed) {
+      var fresh = parsed.querySelector("[data-cart-drawer]");
+      if (!fresh) { return; }
+      var count = parseInt(fresh.getAttribute("data-cart-item-count"), 10);
+      if (isNaN(count)) { return; }
+      root.setAttribute("data-cart-item-count", count);
+      var link = document.querySelector("[data-cart-count]");
+      if (link) { link.setAttribute("aria-label", "Bag (" + count + ")"); }
+      var badge = document.querySelector("[data-cart-count-value]");
+      if (badge) {
+        badge.textContent = count;
+        badge.hidden = count === 0; // an empty bag shows no badge at all
+      }
+    };
+
+    // Delegated: the panel's contents are replaced wholesale on every refresh,
+    // so per-element listeners would be lost each time.
+    root.addEventListener("click", function (e) {
+      if (e.target.closest("[data-cart-close]")) { close(); return; }
+
+      var changeBtn = e.target.closest("[data-line-change]");
+      if (!changeBtn) { return; }
+      var row = changeBtn.closest("[data-line]");
+      if (!row) { return; }
+      changeBtn.disabled = true;
+      fetch("/cart/change.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          line: parseInt(row.getAttribute("data-line"), 10),
+          quantity: parseInt(changeBtn.getAttribute("data-line-change"), 10)
+        })
+      })
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(res.status); })
+        .then(function () { return refresh(); })
+        .catch(function () { changeBtn.disabled = false; });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !root.hidden) { close(); }
+    });
+
+    // Header bag icon opens the drawer instead of navigating to /cart. The header
+    // is outside <main>, so it survives page swaps — bind once or every navigation
+    // would add another handler and fire refresh() repeatedly.
+    var bagLink = document.querySelector("[data-cart-count]");
+    if (bagLink && !bagLink.hasAttribute("data-cart-bound")) {
+      bagLink.setAttribute("data-cart-bound", "");
+      bagLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        refresh().then(open);
+      });
+    }
+
+    // /cart redirects here with #cart so the drawer opens on arrival.
+    if (window.location.hash === "#cart") {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      refresh().then(open);
+    }
+
+    cartDrawer.open = open;
+    cartDrawer.refresh = refresh;
+  }
+
+  // PDP info column — the sticky panel should own the wheel only while it actually
+  // has somewhere left to scroll. data-lenis-prevent is all-or-nothing (Lenis reads
+  // it per event off the composed path), so we toggle it as the pointer scrolls:
+  //   - content fits            -> released, the page scrolls normally (no dead zone)
+  //   - content overflows       -> held, the panel scrolls inside
+  //   - panel at its top/bottom -> released, so the page takes over from there
+  // i.e. read the panel to the end, then keep going and the page continues.
+  function initPdpScroll() {
+    var info = document.querySelector(".pdp__info");
+    if (!info) { return; }
+
+    var EDGE = 2; // px tolerance — scrollTop lands on fractional values when zoomed
+
+    // Only the desktop layout gives this column its own scroll box; on mobile it
+    // is a normal block and must never capture the wheel.
+    var scrollable = function () {
+      var overflowY = window.getComputedStyle(info).overflowY;
+      if (overflowY !== "auto" && overflowY !== "scroll") { return false; }
+      return info.scrollHeight - info.clientHeight > EDGE;
+    };
+
+    var setPrevent = function (on) {
+      if (on) { info.setAttribute("data-lenis-prevent", ""); }
+      else { info.removeAttribute("data-lenis-prevent"); }
+    };
+
+    // Start released, so a short panel never traps the wheel even before the
+    // first event lands.
+    setPrevent(false);
+
+    // Capture phase: this has to settle the attribute before Lenis's own
+    // window-level handler reads it.
+    window.addEventListener("wheel", function (e) {
+      if (!info.contains(e.target)) { return; }
+      if (!scrollable()) { setPrevent(false); return; }
+      var atTop = info.scrollTop <= EDGE;
+      var atBottom = info.scrollTop + info.clientHeight >= info.scrollHeight - EDGE;
+      var down = e.deltaY > 0;
+      setPrevent(!((down && atBottom) || (!down && atTop)));
+    }, { capture: true, passive: true });
+
+    // Touch can't tell us a direction up front, so we go by overflow alone. The
+    // CSS overscroll-behavior: contain stops the panel chaining mid-swipe; lifting
+    // and swiping again moves the page.
+    window.addEventListener("touchstart", function (e) {
+      if (!info.contains(e.target)) { return; }
+      setPrevent(scrollable());
+    }, { capture: true, passive: true });
+  }
+
+  // "You might also like" — Shopify only fills the `recommendations` object on the
+  // /recommendations/products route, so the section ships empty and we pull the
+  // rendered markup in here. Silent on failure: the shell is already empty, so a
+  // dead request just means no section, never a broken one.
+  function initRecommendations() {
+    var host = document.querySelector("[data-product-recommendations]");
+    if (!host || !host.dataset.url) { return; }
+
+    var load = function () {
+      fetch(host.dataset.url)
+        .then(function (res) { return res.ok ? res.text() : Promise.reject(res.status); })
+        .then(function (text) {
+          var parsed = document.createElement("div");
+          parsed.innerHTML = text;
+          var fresh = parsed.querySelector("[data-product-recommendations]");
+          if (!fresh || !fresh.innerHTML.trim()) { return; } // no recommendations for this product
+          host.innerHTML = fresh.innerHTML;
+          revealInjected(host);
+          applyHeaderTheme(); // the new section carries its own data-section-theme
+          if (motionOn) { ScrollTrigger.refresh(); }
+        })
+        .catch(function () {});
+    };
+
+    // Defer until the shell is near the viewport — it sits below the fold, so this
+    // keeps the request off the critical path on first paint.
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) { return; }
+        io.disconnect();
+        load();
+      }, { rootMargin: "600px" });
+      io.observe(host);
+    } else {
+      load();
+    }
+  }
+
+  // Animate .reveal elements added to the DOM after buildMainMotion already ran.
+  // Without this they keep the has-gsap initial state (opacity 0) and never show.
+  function revealInjected(root) {
+    if (!motionOn) { return; } // no has-gsap hiding to undo
+    gsap.utils.toArray(root.querySelectorAll(".reveal")).forEach(function (el) {
+      gsap.to(el, {
+        opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 88%" }
       });
     });
   }
@@ -512,6 +1029,9 @@
     initShop();
     initHeroCarousel();
     initAccordions();
+    initCartDrawer();
+    initPdpScroll();
+    initRecommendations();
   }
 
   /* ===================== Motion layer ===================== */
@@ -904,10 +1424,19 @@
   /* ===================== Client-side transition router ===================== */
   // Fetch the next page and swap <main> in place — the overlay/header/footer
   // never leave the document, so there is no navigation repaint (no flicker).
-  // DISABLED for the Shopify port: we use standard navigation first (cart, section
-  // rendering and checkout are safest without a custom router). Re-enable in a
-  // later phase by restoring `canIntro` here and adapting swapContent to Shopify.
-  if (false && canIntro) {
+  // Shopify notes:
+  //  - Disabled inside the theme editor: designMode re-renders sections into the
+  //    live DOM and a swapped <main> desyncs the editor's preview.
+  //  - Shopify-owned paths (checkout, account, apps, proxies) always hard-navigate;
+  //    they aren't our templates and must not be pulled into <main>.
+  var isDesignMode = !!(window.Shopify && window.Shopify.designMode);
+  // Paths Shopify serves itself — never swap these in.
+  // /cart is included deliberately: its template carries an inline redirect
+  // script, and scripts inside a DOM-parsed swap never execute.
+  var hardNavPath = /^\/(checkout|checkouts|cart|account|orders|apps|tools|services|community|password|challenge|a|wpm)(\/|$)/;
+  var fileLike = /\.(pdf|jpe?g|png|gif|webp|svg|zip|csv|xlsx?|docx?|mp4|mp3)$/i;
+
+  if (canIntro && !isDesignMode) {
     var navigating = false;
     var lightTurn = false; // alternates each transition; false = orange, true = white
     var currentPath = window.location.pathname;
@@ -957,7 +1486,19 @@
       window.scrollTo(0, 0);
       if (lenis) { lenis.scrollTo(0, { immediate: true }); }
       initMain();
+      trackPageView(href);
       return true;
+    };
+
+    // A swapped <main> never triggers a document load, so Shopify's analytics
+    // would only ever record the entry page. Nudge it manually; wrapped because
+    // this is an undocumented internal that can move.
+    var trackPageView = function (href) {
+      try {
+        if (window.ShopifyAnalytics && window.ShopifyAnalytics.lib && window.ShopifyAnalytics.lib.page) {
+          window.ShopifyAnalytics.lib.page(null, { path: new URL(href, window.location.href).pathname });
+        }
+      } catch (e) {}
     };
 
     var navigate = function (href, isPop) {
@@ -999,6 +1540,8 @@
       try { url = new URL(a.getAttribute("href"), window.location.href); } catch (err) { return; }
       if (url.origin !== window.location.origin) { return; }              // external
       if (url.protocol !== "http:" && url.protocol !== "https:") { return; } // mailto/tel/etc.
+      if (hardNavPath.test(url.pathname)) { return; }  // Shopify-owned, not our template
+      if (fileLike.test(url.pathname)) { return; }     // asset/download, not a page
       // Same document (only a hash or nothing changes) → let the browser handle it.
       if (url.pathname === window.location.pathname && url.search === window.location.search) { return; }
       e.preventDefault();

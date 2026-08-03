@@ -1,3 +1,29 @@
 {
-  "current": {}
+  "current": {
+    "sections": {
+      "footer": {
+        "type": "footer",
+        "blocks": {
+          "about": {
+            "type": "menu_column",
+            "settings": { "heading": "About", "menu": "footer-about" }
+          },
+          "shop": {
+            "type": "menu_column",
+            "settings": { "heading": "Shop", "menu": "footer-shop" }
+          },
+          "support": {
+            "type": "menu_column",
+            "settings": { "heading": "Support", "menu": "footer-support" }
+          },
+          "socials": {
+            "type": "menu_column",
+            "settings": { "heading": "Socials", "menu": "footer-socials" }
+          }
+        },
+        "block_order": ["about", "shop", "support", "socials"],
+        "settings": {}
+      }
+    }
+  }
 }
