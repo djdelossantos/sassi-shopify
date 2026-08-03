@@ -40,7 +40,7 @@ bodyClass: template-product
     <h1 class="pdp__title">Atreus Backpack</h1>
     <p class="pdp__price">{{ 3990 | money }}</p>
     <div class="pdp__color">
-      <p>Color: <strong>Black</strong></p>
+      <p>Color: <strong data-color-label>Black</strong></p>
       <div class="pdp__swatches" role="radiogroup" aria-label="Colour">
         <button class="swatch swatch--black is-active" aria-label="Black" role="radio" aria-checked="true"></button>
         <button class="swatch swatch--grey" aria-label="Grey" role="radio" aria-checked="false"></button>
@@ -53,7 +53,12 @@ bodyClass: template-product
         <span class="qty__value" data-qty-value>1</span>
         <button class="qty__btn" data-qty-plus aria-label="Increase quantity">{% render "snippets/icon", name: "plus" %}</button>
       </div>
-      {% render "snippets/button", label: "Add to bag", style: "dark", extra_class: "pdp__add" %}
+      {%- comment -%} Explicit markup rather than the button snippet so it can carry
+        the data hooks the cart engine reads. {%- endcomment -%}
+      <button type="button" class="btn btn--dark pdp__add" data-add data-product-handle="atreus-black-backpack">
+        <span class="btn__label">Add to bag</span>
+        <span class="btn__icon">{% render "snippets/icon", name: "arrow-up-right" %}</span>
+      </button>
     </div>
     <p class="pdp__blurb">Water-repellent nylon shell. Rain lands, rain rolls off. The top flap secures with dual buckle locks to shield your main items, while a coated waterproof zipper underneath keeps your lower pocket completely dry.</p>
 
@@ -74,4 +79,5 @@ bodyClass: template-product
   </div>
 </section>
 
-{% render "sections/product-grid", heading: "You might also like", products: products, hide_link: true %}
+{%- comment -%} A product never appears in its own recommendations. {%- endcomment -%}
+{% render "sections/product-grid", heading: "You might also like", products: products, hide_link: true, exclude: "atreus-black-backpack", anchor: "related" %}

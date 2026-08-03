@@ -1,0 +1,39 @@
+---
+layout: layout.liquid
+title: Search
+permalink: /search/
+bodyClass: template-search
+---
+{%- comment -%}
+  Search results — same .shop shell as the listing page so results read like a
+  collection, minus the type tabs and filter layer. Heading is the search term
+  with the count opposite it.
+
+  The Shopify theme gets results from the server; here theme.js reads ?q= and
+  filters the inlined catalogue, rendering into [data-search-results].
+{%- endcomment -%}
+<section class="shop" data-section-theme="light" data-search-page>
+  <div class="shop__label" data-search-head hidden>
+    <div class="shop__head">
+      <h1 class="shop__title" data-search-terms></h1>
+      <p class="shop__count" data-search-count></p>
+    </div>
+  </div>
+
+  <div class="shop__grid" data-shop-grid data-search-results></div>
+
+  {%- comment -%} Shown on a bare /search/ with no query yet. {%- endcomment -%}
+  <div data-search-prompt>
+    <div class="shop__label">
+      <div class="shop__head"><h1 class="shop__title">Search</h1></div>
+    </div>
+    <form class="shop__search-form" action="/search/" method="get" role="search">
+      <input class="shop__search-input" type="search" name="q" placeholder="Search products"
+             aria-label="Search products" autocomplete="off">
+      <button type="submit" class="btn btn--dark">
+        <span class="btn__label">Search</span>
+        <span class="btn__icon">{% render "snippets/icon", name: "search" %}</span>
+      </button>
+    </form>
+  </div>
+</section>

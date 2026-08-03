@@ -5,7 +5,9 @@
     "price": 2890,
     "image": "/assets/images/product-artemis@2x.png",
     "url": "/products/atreus-backpack/",
-    "swatches": ["black", "olive", "crimson", "bronze"]
+    "swatches": ["black", "olive", "crimson", "bronze"],
+    "type": "Totes",
+    "tags": ["work", "utility"]
   },
   {
     "handle": "athena-beige-handbag",
@@ -13,7 +15,9 @@
     "price": 3290,
     "image": "/assets/images/product-athena@2x.png",
     "url": "/products/atreus-backpack/",
-    "swatches": ["black", "olive", "crimson", "bronze"]
+    "swatches": ["black", "olive", "crimson", "bronze"],
+    "type": "Handbags",
+    "tags": ["work"]
   },
   {
     "handle": "apollo-gray-tote-xl",
@@ -21,7 +25,9 @@
     "price": 2890,
     "image": "/assets/images/product-apollo@2x.png",
     "url": "/products/atreus-backpack/",
-    "swatches": ["black", "grey"]
+    "swatches": ["black", "grey"],
+    "type": "Totes",
+    "tags": ["travel", "utility"]
   },
   {
     "handle": "atreus-black-backpack",
@@ -29,6 +35,8 @@
     "price": 3990,
     "image": "/assets/images/product-atreus@2x.png",
     "url": "/products/atreus-backpack/",
-    "swatches": ["black", "grey", "bronze"]
+    "swatches": ["black", "grey", "bronze"],
+    "type": "Backpacks",
+    "tags": ["work", "tech", "travel"]
   }
 ]

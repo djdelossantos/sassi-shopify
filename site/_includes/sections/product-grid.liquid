@@ -1,5 +1,8 @@
-{%- comment -%} Product grid. Params: heading (string), products (array), hide_link (bool) {%- endcomment -%}
-<section class="product-grid" id="new-arrivals" data-section="product-grid" data-section-theme="light">
+{%- comment -%}
+  Product grid. Params: heading (string), products (array), hide_link (bool),
+  exclude (handle to leave out — a product never recommends itself), anchor.
+{%- endcomment -%}
+<section class="product-grid" id="{{ anchor | default: 'new-arrivals' }}" data-section="product-grid" data-section-theme="light">
   <div class="product-grid__head">
     <h2 class="product-grid__heading">{{ heading | default: "New Arrivals" }}</h2>
     {%- unless hide_link -%}
@@ -8,7 +11,9 @@
   </div>
   <div class="product-grid__items">
     {%- for product in products -%}
-      {% render "snippets/product-card", product: product %}
+      {%- unless exclude and product.handle == exclude -%}
+        {% render "snippets/product-card", product: product %}
+      {%- endunless -%}
     {%- endfor -%}
   </div>
 </section>

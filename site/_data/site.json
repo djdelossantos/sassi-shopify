@@ -3,11 +3,11 @@
   "tagline": "Designed for You to Carry On.",
   "nav": [
     { "label": "Shop", "url": "/shop/" },
-    { "label": "The Brand", "url": "/#brand" }
+    { "label": "The Brand", "url": "/about-us/" }
   ],
   "footer": {
     "about": [
-      { "label": "The Brands", "url": "#" },
+      { "label": "The Brand", "url": "/about-us/" },
       { "label": "Contact", "url": "#" }
     ],
     "shop": [
@@ -21,6 +21,11 @@
       { "label": "Warranty", "url": "#" },
       { "label": "Privacy", "url": "#" },
       { "label": "Terms of Service", "url": "#" }
+    ],
+    "socials": [
+      { "label": "Facebook", "url": "#" },
+      { "label": "Instagram", "url": "#" },
+      { "label": "TikTok", "url": "#" }
     ]
   },
   "copyright": "8180 • Copyright © 2026 SASSi. All rights reserved."

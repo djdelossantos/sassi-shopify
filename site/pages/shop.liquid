@@ -13,7 +13,7 @@ bodyClass: template-shop
 {%- assign types = "backpacks,totes,handbags" | split: "," -%}
 {%- assign passes = 4 -%}
 {%- assign total_count = products | size | times: passes -%}
-<section class="shop" data-section-theme="light">
+<section class="shop" data-section-theme="light" data-shop-section>
   <div class="shop__label">
     <div class="shop__head">
       <h1 class="shop__title">Shop All</h1>
@@ -26,27 +26,81 @@ bodyClass: template-shop
         <button class="shop__type" role="tab" aria-selected="false" data-type="totes">Totes</button>
         <button class="shop__type" role="tab" aria-selected="false" data-type="handbags">Handbags</button>
       </div>
-      <button class="shop__filters" data-filters-toggle aria-expanded="false">
-        <span>Filters</span>
+      <button class="shop__filters" data-filters-toggle aria-expanded="false" aria-controls="shop-filters">
+        <span data-filters-label>Filters</span>
         {% render "snippets/icon", name: "adjust" %}
       </button>
     </div>
   </div>
 
-  {%- comment -%} Placeholder filter panel — contents supplied later {%- endcomment -%}
-  <div class="shop__filter-panel" data-filter-panel hidden>
-    <p class="shop__filter-note">Filters coming soon.</p>
-  </div>
+  {%- comment -%} Grid and filter panel share a row; the panel is placed over the
+    grid on desktop by CSS (see .shop__body). {%- endcomment -%}
+  <div class="shop__body">
+
+  {%- comment -%}
+    Filter panel — same markup as the Shopify theme, but the facets are built
+    from products.json rather than collection.filters, and theme.js filters the
+    rendered cards client-side instead of refetching.
+  {%- endcomment -%}
+  {%- assign all_tags = "utility,work,tech,travel" | split: "," -%}
+  <aside class="shop__filter-panel" id="shop-filters" data-filter-panel aria-label="Filters">
+    <div class="shop__filter-inner">
+      <form class="shop__filter-form" data-filter-form>
+        <div class="shop__filter-groups">
+          <details class="accordion shop__filter-group" open>
+            <summary>Collections {% render "snippets/icon", name: "plus" %}</summary>
+            <div class="accordion__body shop__filter-body">
+              <ul class="shop__filter-values">
+                {%- for t in all_tags -%}
+                  <li>
+                    <label class="shop__filter-value">
+                      <input type="checkbox" name="tag" value="{{ t }}">
+                      <span class="shop__filter-label">{{ t | capitalize }}</span>
+                      <span class="shop__filter-count" data-count-for="{{ t }}"></span>
+                    </label>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          </details>
+
+          <details class="accordion shop__filter-group">
+            <summary>Price {% render "snippets/icon", name: "plus" %}</summary>
+            <div class="accordion__body shop__filter-body">
+              <div class="shop__filter-price">
+                <label class="shop__price-field">
+                  <span class="shop__price-label">Minimum (PHP)</span>
+                  <input type="number" name="price_min" min="0" placeholder="₱" inputmode="decimal">
+                </label>
+                <label class="shop__price-field">
+                  <span class="shop__price-label">Maximum (PHP)</span>
+                  <input type="number" name="price_max" min="0" placeholder="₱" inputmode="decimal">
+                </label>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="shop__filter-actions">
+          {% render "snippets/button", label: "Apply", style: "dark", extra_class: "shop__filter-apply" %}
+          {% render "snippets/button", label: "Clear", style: "outline", extra_class: "shop__filter-clear is-disabled" %}
+        </div>
+      </form>
+    </div>
+  </aside>
 
   <div class="shop__grid" data-shop-grid>
-    {%- comment -%} repeat the catalogue a few times as placeholders {%- endcomment -%}
+    {%- comment -%} The catalogue is repeated a few times to fill the grid; each
+      cell carries its own type, tags and price so the filters can work on it. {%- endcomment -%}
     {%- assign page_size = 8 -%}
     {%- assign card_index = 0 -%}
     {%- for pass in (1..passes) -%}
       {%- for product in products -%}
-        {%- assign type_idx = card_index | modulo: 3 -%}
-        {%- assign ptype = types[type_idx] -%}
-        <div class="shop__cell" data-type="{{ ptype }}"{% if card_index >= page_size %} data-hidden hidden{% endif %}>
+        <div class="shop__cell"
+             data-type="{{ product.type | downcase }}"
+             data-tags="{{ product.tags | join: ',' }}"
+             data-price="{{ product.price }}"
+             {% if card_index >= page_size %}data-hidden hidden{% endif %}>
           {% render "snippets/product-card", product: product %}
         </div>
         {%- assign card_index = card_index | plus: 1 -%}
@@ -56,5 +110,6 @@ bodyClass: template-shop
 
   <div class="shop__loadmore" data-loadmore-wrap>
     {% render "snippets/button", label: "Load More", style: "dark", extra_class: "shop__loadmore-btn" %}
+  </div>
   </div>
 </section>

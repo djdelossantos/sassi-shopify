@@ -8,31 +8,64 @@
         {% render "snippets/button", label: "Notify Me", style: "light" %}
       </form>
     </div>
-    <div class="site-footer__links">
-      <div class="site-footer__col">
-        <h3>About</h3>
-        <ul>
-          {%- for link in site.footer.about -%}
-            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
-          {%- endfor -%}
-        </ul>
-      </div>
-      <div class="site-footer__col">
-        <h3>Shop</h3>
-        <ul>
-          {%- for link in site.footer.shop -%}
-            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
-          {%- endfor -%}
-        </ul>
-      </div>
-      <div class="site-footer__col">
-        <h3>Support</h3>
-        <ul>
-          {%- for link in site.footer.support -%}
-            <li><a href="{{ link.url }}">{{ link.label }}</a></li>
-          {%- endfor -%}
-        </ul>
-      </div>
+    {%- comment -%} Column count drives the grid, so adding/removing a list keeps
+      the row even (matches the Shopify theme's --footer-cols). {%- endcomment -%}
+    {%- liquid
+      assign cols = 0
+      if site.footer.about.size > 0
+        assign cols = cols | plus: 1
+      endif
+      if site.footer.shop.size > 0
+        assign cols = cols | plus: 1
+      endif
+      if site.footer.support.size > 0
+        assign cols = cols | plus: 1
+      endif
+      if site.footer.socials.size > 0
+        assign cols = cols | plus: 1
+      endif
+    -%}
+    <div class="site-footer__links" style="--footer-cols: {{ cols }}">
+      {%- if site.footer.about.size > 0 -%}
+        <div class="site-footer__col">
+          <h3>About</h3>
+          <ul>
+            {%- for link in site.footer.about -%}
+              <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      {%- if site.footer.shop.size > 0 -%}
+        <div class="site-footer__col">
+          <h3>Shop</h3>
+          <ul>
+            {%- for link in site.footer.shop -%}
+              <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      {%- if site.footer.support.size > 0 -%}
+        <div class="site-footer__col">
+          <h3>Support</h3>
+          <ul>
+            {%- for link in site.footer.support -%}
+              <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      {%- if site.footer.socials.size > 0 -%}
+        <div class="site-footer__col">
+          <h3>Socials</h3>
+          <ul>
+            {%- for link in site.footer.socials -%}
+              <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
     </div>
   </div>
   <p class="site-footer__closer" data-closer>Designed for You to&nbsp;<span class="text-brand">Carry&nbsp;On.</span></p>

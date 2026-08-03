@@ -9,7 +9,10 @@
       <p class="product-card__price">{{ product.price | money }}</p>
       {%- if product.swatches -%}
         <span class="product-card__swatches">
-          {%- for c in product.swatches -%}<span class="dot dot--{{ c }}"></span>{%- endfor -%}
+          {%- for c in product.swatches -%}
+            {%- capture sw_style -%}{% render "snippets/swatch-style", value: c %}{%- endcapture -%}
+            <span class="dot" style="{{ sw_style | strip }}" title="{{ c }}"></span>
+          {%- endfor -%}
         </span>
       {%- endif -%}
     </div>

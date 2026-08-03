@@ -29,6 +29,11 @@
     {{ content }}
   </main>
   {% render "sections/footer", site: site %}
+  {% render "snippets/cart-drawer" %}
+
+  {%- comment -%} Catalogue for the client-side cart, search and filters — the
+    Shopify theme gets this from Liquid/AJAX; here it is inlined once. {%- endcomment -%}
+  <script type="application/json" data-products>{{ products | json }}</script>
 
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>

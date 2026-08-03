@@ -1,0 +1,35 @@
+{%- comment -%}
+  Returns the inline `style` for one colour swatch. Shared by the PDP swatches and
+  the product-card dots so both fill the same way. Params: value (a colour name).
+
+  Falls back to a neutral grey for anything unmapped, so a new colour is always
+  visible rather than rendering as an invisible circle.
+
+  Usage:
+    {%- capture sw_style -%}{% render "snippets/swatch-style", value: c %}{%- endcapture -%}
+    <span class="dot" style="{{ sw_style | strip }}"></span>
+{%- endcomment -%}
+{%- liquid
+  assign vhandle = value | downcase | replace: ' ', '-'
+  case vhandle
+    when 'black'
+      assign sw_style = 'background:var(--color-obsidian-black-100)'
+    when 'grey', 'gray'
+      assign sw_style = 'background:var(--color-neutral-grey-50)'
+    when 'warm-grey', 'warm-gray'
+      assign sw_style = 'background:#8b7153'
+    when 'bronze', 'tan'
+      assign sw_style = 'background:var(--color-bronze-100)'
+    when 'olive'
+      assign sw_style = 'background:var(--color-olive-100)'
+    when 'crimson'
+      assign sw_style = 'background:var(--color-crimson-100)'
+    when 'red'
+      assign sw_style = 'background:var(--color-sassi-red-100)'
+    when 'white', 'beige'
+      assign sw_style = 'background:#efece4;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'
+    else
+      assign sw_style = 'background:#cccccc'
+  endcase
+-%}
+{{- sw_style -}}
