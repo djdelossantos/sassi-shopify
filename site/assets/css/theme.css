@@ -695,9 +695,18 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
     grid-column: span 5; grid-row: 1; min-width: 0;
     position: sticky; top: 0; height: 100vh; min-height: 700px;
     gap: var(--space-8); /* restore title->price 8px (mobile is 0) */
-    padding: 0 var(--space-32); align-self: start;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: var(--space-32); align-self: start;
+    display: flex; flex-direction: column; align-items: center;
+    /* long info (e.g. open accordions) scrolls within the pinned column instead
+       of spilling out of reach — scrollbar hidden to avoid a second visible bar */
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
+  .pdp__info::-webkit-scrollbar { display: none; }
+  /* Centre the info when it fits; when it is taller than the viewport the auto
+     margins collapse so it top-aligns and the column becomes fully scrollable. */
+  .pdp__info > :first-child { margin-top: auto; }
+  .pdp__info > :last-child { margin-bottom: auto; }
   .pdp__info > * { width: 100%; max-width: 542px; }
   .pdp__accordions { padding: 0; margin-top: var(--space-16); }
   /* buy controls stay stacked full-width at all sizes, per design v2 */
@@ -838,4 +847,334 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .preloader__dots span { animation: none; opacity: 1; }
+}
+
+/* ==========================================================================
+   Ported from the Shopify theme so the prototype and the live theme match.
+   Appended as one block: later position wins ties against the older rules
+   above (notably the previous .shop__filter-panel rules).
+   ========================================================================== */
+
+/* ---- Header: bag count badge ---- */
+.site-header__bag { position: relative; }
+.site-header__bag-count {
+  position: absolute; top: -6px; right: -8px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: var(--color-bg-brand);
+  color: var(--color-white-100);
+  font-size: var(--font-size-12); font-weight: var(--font-weight-600); line-height: 1;
+}
+.site-header__bag-count[hidden] { display: none; }
+
+/* ---- Header: expanding search panel ----
+   The 0fr -> 1fr grid row animates the height without a hard-coded pixel
+   value, so the bar grows to fit the field at any breakpoint. */
+.site-header__search {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.site-header__search-inner { overflow: hidden; min-height: 0; }
+.site-header.is-search-open { height: auto; background: var(--color-bg-inverse); }
+.site-header.is-search-open .site-header__search { grid-template-rows: 1fr; }
+.site-header__search form {
+  margin: 0 var(--space-16) var(--space-16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+.site-header__search-input {
+  width: 100%; background: none; border: 0; color: var(--color-white-100);
+  font-family: inherit; font-size: var(--font-size-24); padding: var(--space-8) 0;
+}
+.site-header__search-input::placeholder { color: var(--color-white-100); opacity: 0.45; }
+.site-header__search-input:focus { outline: none; }
+
+/* ---- Shop: empty state, pagination, bare search form ---- */
+.shop__empty {
+  grid-column: 1 / -1; text-align: center;
+  padding: var(--space-64) var(--space-16);
+  color: var(--color-text-secondary);
+}
+.shop__pagination { display: flex; justify-content: center; padding-top: var(--space-32); }
+.shop__search-form { display: flex; gap: var(--space-16); align-items: center; flex-wrap: wrap; padding: 0 var(--space-16); }
+.shop__search-input {
+  flex: 1 1 240px; background: none; border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  font-family: inherit; font-size: var(--font-size-24);
+  color: var(--color-text-primary); padding: var(--space-8) 0;
+}
+.shop__search-input:focus { outline: none; border-bottom-color: var(--color-text-primary); }
+
+/* ---- Shop: filter panel ----
+   Mobile: an in-flow block that collapses on a grid row. The clipper carries no
+   padding of its own — a 0fr row zeroes the content box but padding survives it
+   and would leave a residual band that pushes the grid down. */
+.shop__filter-panel {
+  padding: 0; border-top: 0;
+  display: grid; grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.45s;
+}
+.shop.is-filtering .shop__filter-panel {
+  grid-template-rows: 1fr; visibility: visible; transition-delay: 0s, 0s;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.shop__filter-inner { overflow: hidden; min-height: 0; }
+.shop__filter-inner > * { padding: var(--space-16); }
+.shop__filter-groups { display: block; }
+.shop__filter-body { color: var(--color-text-primary); }
+.shop__filter-values { display: flex; flex-direction: column; gap: 6px; }
+.shop__filter-value {
+  display: flex; align-items: center; gap: var(--space-8);
+  font-size: var(--font-size-14); cursor: pointer;
+}
+.shop__filter-value.is-disabled { opacity: 0.4; cursor: default; }
+.shop__filter-label { flex: 1 1 auto; }
+.shop__filter-count { color: var(--color-text-secondary); font-size: var(--font-size-12); }
+.shop__filter-price { display: flex; gap: var(--space-8); }
+.shop__price-field { flex: 1 1 0; min-width: 0; }
+.shop__price-label {
+  display: block; margin-bottom: 4px;
+  font-size: var(--font-size-12); color: var(--color-text-secondary);
+}
+.shop__filter-price input {
+  width: 100%; min-width: 0; font-family: inherit; font-size: var(--font-size-14);
+  padding: var(--space-8); border: 1px solid var(--color-border-default);
+  background: none; color: var(--color-text-primary);
+}
+.shop__filter-price input::placeholder { color: var(--color-text-secondary); opacity: 0.7; }
+.shop__filter-price input:focus { outline: none; border-color: var(--color-text-primary); }
+.shop__filter-actions {
+  display: flex; gap: var(--space-8);
+  margin-top: var(--space-24);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.shop__filter-actions .btn { flex: 1 1 0; min-width: 0; font-size: var(--font-size-14); }
+.shop__filter-clear.is-disabled { opacity: 0.4; pointer-events: none; }
+a.shop__type { text-decoration: none; white-space: nowrap; }
+[data-shop-section][data-loading] .shop__grid {
+  opacity: 0.4; transition: opacity 0.2s ease; pointer-events: none;
+}
+
+/* ---- Cart drawer ---- */
+.cart-drawer { position: fixed; inset: 0; z-index: 200; }
+.cart-drawer[hidden] { display: none; }
+.cart-drawer__scrim {
+  position: absolute; inset: 0; background: rgba(18, 16, 14, 0.5);
+  opacity: 0; transition: opacity 0.35s ease;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.cart-drawer.is-open .cart-drawer__scrim { opacity: 1; }
+.cart-drawer__panel {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: min(440px, 100%);
+  background: var(--color-bg-inverse); color: var(--color-white-100);
+  display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cart-drawer.is-open .cart-drawer__panel { transform: translateX(0); }
+.cart-drawer__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-16); padding: var(--space-24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+.cart-drawer__title { font-size: var(--font-size-18); font-weight: var(--font-weight-700); }
+.cart-drawer__count { font-weight: var(--font-weight-400); opacity: 0.6; }
+.cart-drawer__close { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__close:hover { color: var(--color-bg-brand); }
+.cart-drawer__items {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--space-24); display: flex; flex-direction: column; gap: var(--space-24);
+}
+.cart-drawer__items[hidden] { display: none; }
+.cart-drawer__item { display: flex; gap: var(--space-16); }
+.cart-drawer__item-media {
+  flex: 0 0 96px; width: 96px; height: 96px;
+  background: var(--color-bg-subtle); display: block; overflow: hidden;
+}
+.cart-drawer__item-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cart-drawer__item-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cart-drawer__item-top { display: flex; justify-content: space-between; gap: var(--space-16); }
+.cart-drawer__item-title { font-size: var(--font-size-16); line-height: 1.3; }
+.cart-drawer__item-title:hover { color: var(--color-bg-brand); }
+.cart-drawer__item-price { font-size: var(--font-size-16); white-space: nowrap; text-align: right; }
+.cart-drawer__item-variant { font-size: var(--font-size-14); opacity: 0.6; }
+.cart-drawer__item-controls {
+  margin-top: var(--space-8); display: flex; align-items: center;
+  justify-content: space-between; gap: var(--space-16);
+}
+.cart-drawer__qty {
+  display: inline-flex; align-items: center; gap: var(--space-8);
+  border: 1px solid rgba(255, 255, 255, 0.25); padding: var(--space-8);
+}
+.cart-drawer__qty button { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__qty button:hover { color: var(--color-bg-brand); }
+.cart-drawer__qty .icon { width: 16px; height: 16px; }
+.cart-drawer__qty-value { min-width: 20px; text-align: center; font-size: var(--font-size-14); }
+.cart-drawer__remove { color: inherit; display: flex; transition: color 0.2s ease; }
+.cart-drawer__remove:hover { color: var(--color-bg-brand); }
+.cart-drawer__foot { padding: var(--space-24); border-top: 1px solid rgba(255, 255, 255, 0.15); }
+.cart-drawer__foot[hidden] { display: none; }
+.cart-drawer__total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: var(--font-size-24); font-weight: var(--font-weight-600);
+}
+.cart-drawer__total strong { font-weight: var(--font-weight-600); }
+.cart-drawer__tax { font-size: var(--font-size-14); opacity: 0.6; margin-top: 4px; }
+.cart-drawer__checkout { width: 100%; margin-top: var(--space-16); }
+.cart-drawer__empty {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: var(--space-24); padding: var(--space-32); text-align: center;
+}
+.cart-drawer__empty[hidden] { display: none; }
+body.has-cart-open { overflow: hidden; }
+
+/* ---- Desktop overrides ---- */
+@media (min-width: 900px) {
+  /* Footer column count follows the number of rendered lists. */
+  .site-footer__links { grid-template-columns: repeat(var(--footer-cols, 3), 1fr); }
+
+  /* Search open: solid bar behind the field, and the per-section colouring
+     must not win while it is open. */
+  .site-header.is-search-open { background: var(--color-bg-inverse); }
+  .site-header.is-search-open .site-header__left,
+  .site-header.is-search-open .site-header__icons { color: var(--color-white-100); }
+  .site-header__search form { margin: 0 var(--space-32) var(--space-24); }
+  .site-header__search-input { font-size: var(--font-size-32); }
+
+  /* Filters drop over the grid from under the toolbar button rather than
+     pushing it, so nothing below reflows. */
+  .shop__body { position: relative; }
+  .shop__main { min-width: 0; }
+  .shop__filter-panel {
+    position: absolute; top: 0; right: 0; z-index: 20;
+    width: 320px; border-top: 0;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-primary);
+    display: block; overflow: visible;
+    opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0.25s;
+  }
+  .shop.is-filtering .shop__filter-panel {
+    opacity: 1; transform: translateY(0); visibility: visible; transition-delay: 0s, 0s, 0s;
+  }
+  html.has-gsap .shop__filter-panel { transition: none; }
+  .shop__filter-inner { width: auto; padding: var(--space-8); }
+  .shop__filter-inner > * { padding: 0; }
+}
+
+
+/* ---- Scroll-scrubbed video (canvas image sequence) ----
+   Section is --panels × 100vh tall. The canvas pin is sticky so it holds for the
+   whole run; the copy panels are absolutely positioned over it, one per 100vh,
+   so a single background carries several sections of content. */
+.scroll-video {
+  position: relative;
+  height: calc(var(--panels, 3) * 100svh);
+  background: var(--color-bg-inverse);
+}
+.scroll-video__pin {
+  position: sticky; top: 0;
+  height: 100svh; width: 100%;
+  overflow: hidden;
+}
+.scroll-video__canvas,
+.scroll-video__poster {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+.scroll-video__poster { object-fit: cover; object-position: top center; }
+/* Sits above the canvas, below the copy. A flat wash rather than a gradient so
+   the dimming is even wherever the panels land. */
+.scroll-video__dim {
+  position: absolute; inset: 0; z-index: 1;
+  background: rgba(18, 16, 14, var(--dim, 0.45));
+  pointer-events: none;
+}
+/* Grain layer. mix-blend-mode blends with everything painted below it inside
+   .scroll-video__pin (canvas + scrim) but not the copy, which paints after. */
+.scroll-video__noise {
+  position: absolute; inset: 0; z-index: 2;
+  /* The supplied grain render, used as one covering image — no tiling, so there
+     is no repeat to spot. It sits near mid-grey, which is Overlay's neutral
+     point, so it needs contrast expanded to register at 12%. Done with a CSS
+     filter rather than baked into the file, so --grain-contrast stays tunable
+     without re-encoding. */
+  background-image: url("../images/noise_overlay.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  filter: contrast(var(--grain-contrast, 1.8));
+  opacity: var(--noise, 0.06);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Panels overlay the whole scroll run, stacked one per viewport. */
+.scroll-video__panels {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column;
+  pointer-events: none; /* never block scrolling over the background */
+}
+.scroll-video__panel {
+  flex: 0 0 100svh; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-32);
+}
+.scroll-video__overlay {
+  max-width: 720px; text-align: center;
+  color: var(--color-white-100);
+  pointer-events: auto; /* but the copy itself stays selectable */
+  text-shadow: 0 2px 24px rgba(18, 16, 14, 0.45);
+}
+/* Left-aligned variant: copy sits against the left edge rather than centred. */
+.scroll-video__panels--left .scroll-video__panel {
+  justify-content: flex-start;
+  padding-left: var(--space-16);
+  padding-right: var(--space-16);
+}
+.scroll-video__panels--left .scroll-video__overlay { text-align: left; }
+/* Eyebrow above the headline — bronze accent, from the existing palette. */
+.scroll-video__eyebrow {
+  margin-bottom: var(--space-16);
+  color: var(--color-accent-bronze);
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-900);
+  letter-spacing: var(--letter-spacing-0-13);
+}
+/* Same scale as .brand-intro__heading: 40px mobile, 56px from 900px up. */
+.scroll-video__heading {
+  font-size: 40px; font-weight: var(--font-weight-800);
+  line-height: 1.1; letter-spacing: var(--letter-spacing-neg-0-98);
+}
+.scroll-video__copy {
+  margin-top: var(--space-16);
+  font-size: var(--font-size-16); opacity: 0.9;
+}
+/* Thin progress line while the sequence preloads — a blank canvas with no
+   explanation reads as broken. Fades out once every frame is decoded. */
+.scroll-video__loading {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  height: 2px; background: rgba(255, 255, 255, 0.15);
+  transition: opacity 0.4s ease;
+}
+.scroll-video__loading[hidden] { display: block; opacity: 0; pointer-events: none; }
+.scroll-video__loading-bar { display: block; height: 100%; }
+.scroll-video__loading-bar i {
+  display: block; height: 100%; width: 0%;
+  background: var(--color-bg-brand);
+  transition: width 0.2s linear;
+}
+@media (min-width: 900px) {
+  .scroll-video__eyebrow { font-size: var(--font-size-18); }
+  .scroll-video__heading { font-size: var(--font-size-56); line-height: 1.05; }
+  .scroll-video__panels--left .scroll-video__panel { padding-left: var(--space-64); }
+}
+/* Without motion the sequence never scrubs, so collapse to a single viewport
+   rather than leaving several screens of dead scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-video { height: 100svh; }
+  .scroll-video__panels { position: relative; }
+  .scroll-video__panel { flex: 0 0 auto; }
 }

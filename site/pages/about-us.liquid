@@ -1,0 +1,35 @@
+---
+layout: layout.liquid
+title: About Us
+permalink: /about-us/
+bodyClass: template-about
+---
+{%- comment -%}
+  About Us — the brand story, told over a scroll-scrubbed background.
+  Linked from "The Brand" in the header nav.
+
+  align: "top" anchors the crop to the top of the frame, so any vertical trim
+  (from zoom_mobile, or a tall viewport) falls off the bottom and headroom above
+  the subject is preserved.
+{%- endcomment -%}
+{% render "sections/scroll-video",
+   dir: "/assets/frames/travel-hero",
+   count: 200,
+   dir_mobile: "/assets/frames/travel-hero-mobile",
+   count_mobile: 100,
+   zoom_mobile: 1.2,
+   pad: 3,
+   ext: "webp",
+   pan: "false",
+   align: "top",
+   dim: 0.3,
+   noise: 0.06,
+   text_align: "left",
+   p1_eyebrow: "SASSi was built on a simple idea:",
+   p1_heading: "That products should be purposeful, premium, and easy to get.",
+   p2_heading: "We make reliable carry for the people we rely on.",
+   p2_tone: "brand",
+   p3_heading: "Designing every SASSi product to perfectly support your daily life." %}
+
+{%- comment -%} Same New Arrivals section as the homepage. {%- endcomment -%}
+{% render "sections/product-grid", heading: "New Arrivals", products: products %}

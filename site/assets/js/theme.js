@@ -54,24 +54,22 @@
       if (document.readyState === "complete") { revealRM(); }
       else { window.addEventListener("load", revealRM, { once: true }); }
     } else {
+      // Always runs the full 00→100 over a fixed duration, independent of how
+      // fast the document actually loads — the count is the intro, not a
+      // progress readout, so it should not be cut short on a warm cache.
       var preStart = performance.now();
-      var preMin = 1200;                               // always show at least this long
-      var preReady = document.readyState === "complete";
-      window.addEventListener("load", function () { preReady = true; });
-      setTimeout(function () { preReady = true; }, 10000); // safety: never trap the page
-      var preVal = 0;
+      var preDuration = 1800;
       var preFmt = function (n) {
         n = Math.max(0, Math.min(100, Math.round(n)));
         return n < 100 ? ("0" + n).slice(-2) : "100";
       };
       var preTick = function (now) {
-        var elapsed = now - preStart;
-        // Creep toward ~90 while loading; race to 100 once ready and past the min.
-        var target = (preReady && elapsed >= preMin) ? 100 : 90 * (1 - Math.exp(-elapsed / 650));
-        preVal += (target - preVal) * 0.1;
-        if (target === 100 && preVal > 99.3) { preVal = 100; }
-        if (countEl) { countEl.textContent = preFmt(preVal); }
-        if (preVal >= 100) { finishPre(); return; }
+        var t = Math.min(1, (now - preStart) / preDuration);
+        // Ease out so it sprints early and settles onto 100 rather than
+        // ticking at a flat, mechanical rate.
+        var eased = 1 - Math.pow(1 - t, 2.2);
+        if (countEl) { countEl.textContent = preFmt(eased * 100); }
+        if (t >= 1) { finishPre(); return; }
         requestAnimationFrame(preTick);
       };
       requestAnimationFrame(preTick);
@@ -255,20 +253,50 @@
     var activeType = "all";
     var visibleCount = pageSize;
 
+    // Applied facets — set by the filter form, read alongside the type tabs.
+    var activeTags = [];
+    var priceMin = null;
+    var priceMax = null;
+
+    var cellMatches = function (cell) {
+      if (activeType !== "all" && cell.getAttribute("data-type") !== activeType) { return false; }
+      if (activeTags.length) {
+        var tags = (cell.getAttribute("data-tags") || "").split(",");
+        // OR within the group: any selected collection is a match.
+        var hit = activeTags.some(function (t) { return tags.indexOf(t) !== -1; });
+        if (!hit) { return false; }
+      }
+      var price = parseFloat(cell.getAttribute("data-price"));
+      if (priceMin !== null && price < priceMin) { return false; }
+      if (priceMax !== null && price > priceMax) { return false; }
+      return true;
+    };
+
     var shopApply = function () {
       var shown = 0;
       cells.forEach(function (cell) {
-        var matches = activeType === "all" || cell.getAttribute("data-type") === activeType;
-        if (matches && shown < visibleCount) { cell.hidden = false; shown++; }
+        if (cellMatches(cell) && shown < visibleCount) { cell.hidden = false; shown++; }
         else { cell.hidden = true; }
       });
-      var totalMatching = cells.filter(function (c) {
-        return activeType === "all" || c.getAttribute("data-type") === activeType;
-      }).length;
+      var totalMatching = cells.filter(cellMatches).length;
       var wrap = document.querySelector("[data-loadmore-wrap]");
       if (wrap) { wrap.toggleAttribute("data-exhausted", visibleCount >= totalMatching); }
+      var countEl = document.querySelector("[data-shop-count]");
+      if (countEl) { countEl.textContent = totalMatching + (totalMatching === 1 ? " product" : " products"); }
       shopGrid.dispatchEvent(new CustomEvent("shop:changed")); // let the motion layer batch-reveal new cards
     };
+
+    // Per-facet counts, so each checkbox shows how many products carry it.
+    var stampCounts = function () {
+      document.querySelectorAll("[data-count-for]").forEach(function (el) {
+        var tag = el.getAttribute("data-count-for");
+        var n = cells.filter(function (c) {
+          return (c.getAttribute("data-tags") || "").split(",").indexOf(tag) !== -1;
+        }).length;
+        el.textContent = n;
+      });
+    };
+    stampCounts();
 
     var types = document.querySelector("[data-shop-types]");
     if (types) {
@@ -285,14 +313,68 @@
       });
     }
 
+    // Filter dropdown. .is-filtering on the section drives the CSS; GSAP
+    // orchestrates the panel and its groups when motion is on.
     var filtersToggle = document.querySelector("[data-filters-toggle]");
-    var filterPanel = document.querySelector("[data-filter-panel]");
-    if (filtersToggle && filterPanel) {
-      filtersToggle.addEventListener("click", function () {
-        var open = filterPanel.hasAttribute("hidden");
-        filterPanel.toggleAttribute("hidden", !open);
+    var shopSection = document.querySelector("[data-shop-section]");
+    if (filtersToggle && shopSection) {
+      var filtersLabel = filtersToggle.querySelector("[data-filters-label]");
+      var filterTl = buildFilterTimeline(shopSection);
+      var setFilters = function (open) {
+        shopSection.classList.toggle("is-filtering", open);
         filtersToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        if (filtersLabel) { filtersLabel.textContent = open ? "Hide filters" : "Filters"; }
+        if (filterTl) { filterTl.set(open); }
+      };
+      filtersToggle.addEventListener("click", function (e) {
+        e.stopPropagation(); // don't let the outside-click handler undo this
+        setFilters(!shopSection.classList.contains("is-filtering"));
       });
+      document.addEventListener("click", function (e) {
+        if (!shopSection.classList.contains("is-filtering")) { return; }
+        var panel = shopSection.querySelector("[data-filter-panel]");
+        if (panel && panel.contains(e.target)) { return; }
+        setFilters(false);
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && shopSection.classList.contains("is-filtering")) {
+          setFilters(false);
+          filtersToggle.focus();
+        }
+      });
+    }
+
+    // Apply / Clear. Filters are applied explicitly, matching the theme.
+    var filterForm = document.querySelector("[data-filter-form]");
+    if (filterForm) {
+      var clearBtn = filterForm.querySelector(".shop__filter-clear");
+      var syncClear = function () {
+        var any = activeTags.length > 0 || priceMin !== null || priceMax !== null;
+        if (clearBtn) { clearBtn.classList.toggle("is-disabled", !any); }
+      };
+
+      var readForm = function () {
+        activeTags = [].slice.call(filterForm.querySelectorAll("input[name='tag']:checked"))
+          .map(function (i) { return i.value; });
+        var min = filterForm.querySelector("input[name='price_min']");
+        var max = filterForm.querySelector("input[name='price_max']");
+        priceMin = min && min.value !== "" ? parseFloat(min.value) : null;
+        priceMax = max && max.value !== "" ? parseFloat(max.value) : null;
+        visibleCount = pageSize; // a new filter set starts from the first page
+        syncClear();
+        shopApply();
+      };
+
+      filterForm.addEventListener("submit", function (e) { e.preventDefault(); readForm(); });
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (clearBtn.classList.contains("is-disabled")) { return; }
+          filterForm.reset();
+          readForm();
+        });
+      }
+      syncClear();
     }
 
     var loadMoreBtn = document.querySelector(".shop__loadmore-btn");
@@ -405,6 +487,626 @@
     });
   }
 
+  /* ===================== Ported from the Shopify theme =====================
+     The live theme talks to Shopify for the cart, search and filtering. There is
+     no server here, so these run against _data/products.json (inlined into the
+     page as [data-products]) with the cart held in localStorage. The markup,
+     CSS and interactions are identical to the theme so design work transfers. */
+
+  var PESO = function (cents) {
+    return "₱" + (cents).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // Product catalogue, inlined by the layout so every page can read it.
+  var CATALOGUE = (function () {
+    var el = document.querySelector("[data-products]");
+    if (!el) { return []; }
+    try { return JSON.parse(el.textContent); } catch (e) { return []; }
+  })();
+
+  var findProduct = function (handle) {
+    for (var i = 0; i < CATALOGUE.length; i++) {
+      if (CATALOGUE[i].handle === handle) { return CATALOGUE[i]; }
+    }
+    return null;
+  };
+
+  /* ---------------------- Cart (localStorage stand-in) ---------------------- */
+  var CART_KEY = "sassi_cart";
+  var cartRead = function () {
+    try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { return []; }
+  };
+  var cartWrite = function (lines) {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(lines)); } catch (e) {}
+  };
+
+  var cartDrawer = { open: function () {}, render: function () {} };
+
+  function initCartDrawer() {
+    var root = document.querySelector("[data-cart-drawer]");
+    if (!root) { return; }
+    // The drawer lives in the layout, so it survives page swaps — bind once or
+    // every navigation would stack another set of handlers.
+    if (root.hasAttribute("data-cart-bound")) { cartDrawer.render(); return; }
+    root.setAttribute("data-cart-bound", "");
+
+    var itemsEl = root.querySelector("[data-cart-items]");
+    var footEl = root.querySelector("[data-cart-foot]");
+    var emptyEl = root.querySelector("[data-cart-empty]");
+    var totalEl = root.querySelector("[data-cart-total]");
+    var titleCount = root.querySelector("[data-cart-title-count]");
+    var lastFocus = null;
+
+    var render = function () {
+      var lines = cartRead();
+      var count = 0, total = 0;
+      var html = "";
+
+      lines.forEach(function (line, index) {
+        var p = findProduct(line.handle);
+        if (!p) { return; }
+        count += line.qty;
+        var lineTotal = p.price * line.qty;
+        total += lineTotal;
+        html +=
+          '<li class="cart-drawer__item" data-line="' + index + '">' +
+            '<a class="cart-drawer__item-media" href="' + p.url + '" tabindex="-1" aria-hidden="true">' +
+              '<img src="' + p.image + '" alt="" width="96" height="96" loading="lazy">' +
+            '</a>' +
+            '<div class="cart-drawer__item-body">' +
+              '<div class="cart-drawer__item-top">' +
+                '<a class="cart-drawer__item-title" href="' + p.url + '">' + p.title + '</a>' +
+                '<p class="cart-drawer__item-price">' + PESO(lineTotal) + '</p>' +
+              '</div>' +
+              (line.variant ? '<p class="cart-drawer__item-variant">' + line.variant + '</p>' : '') +
+              '<div class="cart-drawer__item-controls">' +
+                '<div class="cart-drawer__qty">' +
+                  '<button type="button" data-line-change="' + (line.qty - 1) + '" aria-label="Decrease quantity">' + ICON_MINUS + '</button>' +
+                  '<span class="cart-drawer__qty-value">' + line.qty + '</span>' +
+                  '<button type="button" data-line-change="' + (line.qty + 1) + '" aria-label="Increase quantity">' + ICON_PLUS + '</button>' +
+                '</div>' +
+                '<button type="button" class="cart-drawer__remove" data-line-change="0" aria-label="Remove ' + p.title + '">' + ICON_TRASH + '</button>' +
+              '</div>' +
+            '</div>' +
+          '</li>';
+      });
+
+      if (itemsEl) { itemsEl.innerHTML = html; itemsEl.hidden = count === 0; }
+      if (footEl) { footEl.hidden = count === 0; }
+      if (emptyEl) { emptyEl.hidden = count > 0; }
+      if (totalEl) { totalEl.textContent = PESO(total); }
+      if (titleCount) { titleCount.textContent = "(" + count + " " + (count === 1 ? "item" : "items") + ")"; }
+
+      var link = document.querySelector("[data-cart-count]");
+      if (link) { link.setAttribute("aria-label", "Bag (" + count + ")"); }
+      var badge = document.querySelector("[data-cart-count-value]");
+      if (badge) { badge.textContent = count; badge.hidden = count === 0; }
+    };
+
+    var open = function () {
+      lastFocus = document.activeElement;
+      root.hidden = false;
+      requestAnimationFrame(function () { root.classList.add("is-open"); });
+      document.body.classList.add("has-cart-open");
+      if (lenis) { lenis.stop(); }
+      var closeBtn = root.querySelector(".cart-drawer__close");
+      if (closeBtn) { closeBtn.focus(); }
+    };
+
+    var close = function () {
+      root.classList.remove("is-open");
+      document.body.classList.remove("has-cart-open");
+      if (lenis) { lenis.start(); }
+      var panel = root.querySelector(".cart-drawer__panel");
+      var done = function () { root.hidden = true; };
+      if (panel) { panel.addEventListener("transitionend", done, { once: true }); }
+      else { done(); }
+      if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+    };
+
+    // Delegated — the item list is re-rendered wholesale on every change.
+    root.addEventListener("click", function (e) {
+      if (e.target.closest("[data-cart-close]")) { close(); return; }
+      var btn = e.target.closest("[data-line-change]");
+      if (!btn) { return; }
+      var row = btn.closest("[data-line]");
+      if (!row) { return; }
+      var index = parseInt(row.getAttribute("data-line"), 10);
+      var qty = parseInt(btn.getAttribute("data-line-change"), 10);
+      var lines = cartRead();
+      if (qty <= 0) { lines.splice(index, 1); }
+      else { lines[index].qty = qty; }
+      cartWrite(lines);
+      render();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !root.hidden) { close(); }
+    });
+
+    var bagLink = document.querySelector("[data-cart-count]");
+    if (bagLink && !bagLink.hasAttribute("data-cart-bound")) {
+      bagLink.setAttribute("data-cart-bound", "");
+      bagLink.addEventListener("click", function (e) { e.preventDefault(); open(); });
+    }
+
+    cartDrawer.open = open;
+    cartDrawer.render = render;
+    render();
+  }
+
+  // Inline icon markup for the JS-rendered cart lines (matches snippets/icon).
+  var ICON_MINUS = '<svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  var ICON_PLUS = '<svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  var ICON_TRASH = '<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 4h4M9 7v12M15 7v12M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // PDP add-to-bag — no form post, just push a line and slide the drawer in.
+  function initAddToCart() {
+    var btn = document.querySelector("[data-add]");
+    if (!btn || btn.hasAttribute("data-add-bound")) { return; }
+    btn.setAttribute("data-add-bound", "");
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      var handle = btn.getAttribute("data-product-handle");
+      if (!handle) { return; }
+      var variant = null;
+      var label = document.querySelector("[data-color-label]");
+      if (label) { variant = label.textContent.trim(); }
+      var qtyEl = document.querySelector("[data-qty-value]");
+      var qty = qtyEl ? parseInt(qtyEl.textContent, 10) || 1 : 1;
+
+      var lines = cartRead();
+      var existing = null;
+      lines.forEach(function (l) {
+        if (l.handle === handle && l.variant === variant) { existing = l; }
+      });
+      if (existing) { existing.qty += qty; }
+      else { lines.push({ handle: handle, variant: variant, qty: qty }); }
+      cartWrite(lines);
+      cartDrawer.render();
+      cartDrawer.open();
+    });
+  }
+
+  /* ---------------------- PDP sticky info column ---------------------- */
+  // The pinned panel owns the wheel only while it actually has somewhere left to
+  // scroll: content that fits leaves the page scrolling normally (no dead zone),
+  // and reaching the panel's top/bottom hands control back to the page.
+  function initPdpScroll() {
+    var info = document.querySelector(".pdp__info");
+    if (!info || info.hasAttribute("data-scroll-bound")) { return; }
+    info.setAttribute("data-scroll-bound", "");
+    var EDGE = 2;
+
+    var scrollable = function () {
+      var overflowY = window.getComputedStyle(info).overflowY;
+      if (overflowY !== "auto" && overflowY !== "scroll") { return false; }
+      return info.scrollHeight - info.clientHeight > EDGE;
+    };
+    var setPrevent = function (on) {
+      if (on) { info.setAttribute("data-lenis-prevent", ""); }
+      else { info.removeAttribute("data-lenis-prevent"); }
+    };
+    setPrevent(false);
+
+    window.addEventListener("wheel", function (e) {
+      if (!info.contains(e.target)) { return; }
+      if (!scrollable()) { setPrevent(false); return; }
+      var atTop = info.scrollTop <= EDGE;
+      var atBottom = info.scrollTop + info.clientHeight >= info.scrollHeight - EDGE;
+      var down = e.deltaY > 0;
+      setPrevent(!((down && atBottom) || (!down && atTop)));
+    }, { capture: true, passive: true });
+
+    window.addEventListener("touchstart", function (e) {
+      if (!info.contains(e.target)) { return; }
+      setPrevent(scrollable());
+    }, { capture: true, passive: true });
+  }
+
+  /* ---------------------- Header search panel ---------------------- */
+  function initHeaderSearch() {
+    var hdr = document.querySelector("[data-header]");
+    if (!hdr || hdr.hasAttribute("data-search-bound")) { return; }
+    var toggle = hdr.querySelector("[data-search-toggle]");
+    var input = hdr.querySelector("[data-search-input]");
+    if (!toggle || !input) { return; }
+    hdr.setAttribute("data-search-bound", "");
+
+    if (motionOn) { gsap.set(input, { autoAlpha: 0, y: 10 }); }
+    var animate = function (open) {
+      if (!motionOn) { return; }
+      gsap.to(input, {
+        autoAlpha: open ? 1 : 0, y: open ? 0 : 10,
+        duration: open ? 0.4 : 0.28, ease: "power3.out",
+        delay: open ? 0.1 : 0, overwrite: true
+      });
+    };
+    var setSearch = function (open) {
+      animate(open);
+      hdr.classList.toggle("is-search-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        hdr.classList.remove("site-header--hidden");
+        input.focus();
+      } else { input.blur(); }
+      applyHeaderTheme();
+    };
+
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      setSearch(!hdr.classList.contains("is-search-open"));
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !hdr.classList.contains("is-search-open")) { return; }
+      setSearch(false);
+      toggle.focus();
+    });
+    document.addEventListener("click", function (e) {
+      if (!hdr.classList.contains("is-search-open")) { return; }
+      if (hdr.contains(e.target)) { return; }
+      setSearch(false);
+    });
+  }
+
+  /* ---------------------- Reveal for injected markup ---------------------- */
+  function revealInjected(root) {
+    if (!motionOn || !root) { return; }
+    gsap.utils.toArray(root.querySelectorAll(".reveal")).forEach(function (el) {
+      gsap.to(el, {
+        opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 88%" }
+      });
+    });
+  }
+
+  /* ---------------------- Filter dropdown ---------------------- */
+  // Open and close are separate tweens that each ease OUT (rather than one
+  // reversible timeline, which would run power3.out backwards as a power3.in and
+  // make the panel look like it falls shut). Closing mirrors the stagger.
+  function buildFilterTimeline(section) {
+    if (!motionOn) { return null; }
+    var panel = section.querySelector("[data-filter-panel]");
+    if (!panel) { return null; }
+    var groups = [].slice.call(
+      panel.querySelectorAll(".shop__filter-group, .shop__filter-actions, .shop__filter-note")
+    );
+    var mq = window.matchMedia("(min-width: 900px)");
+    var targets = [panel].concat(groups);
+    var primed = false;
+
+    var prime = function () {
+      gsap.set(panel, { autoAlpha: 0, y: -8 });
+      if (groups.length) { gsap.set(groups, { autoAlpha: 0, y: 12 }); }
+      primed = true;
+    };
+
+    return {
+      set: function (open) {
+        if (!mq.matches) {
+          if (primed) {
+            gsap.killTweensOf(targets);
+            gsap.set(targets, { clearProps: "all" });
+            primed = false;
+          }
+          return;
+        }
+        if (!primed) { prime(); }
+        if (open) {
+          gsap.to(panel, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out", overwrite: true });
+          if (groups.length) {
+            gsap.to(groups, {
+              autoAlpha: 1, y: 0, duration: 0.45, ease: "power2.out", overwrite: true,
+              delay: 0.08, stagger: { each: 0.06, from: "start" }
+            });
+          }
+        } else {
+          if (groups.length) {
+            gsap.to(groups, {
+              autoAlpha: 0, y: 12, duration: 0.3, ease: "power2.out", overwrite: true,
+              stagger: { each: 0.04, from: "end" }
+            });
+          }
+          gsap.to(panel, {
+            autoAlpha: 0, y: -8, duration: 0.35, ease: "power3.out", overwrite: true,
+            delay: groups.length ? 0.06 : 0
+          });
+        }
+      }
+    };
+  }
+
+  /* ---------------------- Search results ---------------------- */
+  // Reads ?q= and filters the inlined catalogue. The Shopify theme gets this
+  // from the server; the rendered markup is identical either way.
+  function initSearchPage() {
+    var page = document.querySelector("[data-search-page]");
+    if (!page) { return; }
+    var results = page.querySelector("[data-search-results]");
+    var head = page.querySelector("[data-search-head]");
+    var prompt = page.querySelector("[data-search-prompt]");
+    var termsEl = page.querySelector("[data-search-terms]");
+    var countEl = page.querySelector("[data-search-count]");
+
+    var params = new URLSearchParams(window.location.search);
+    var q = (params.get("q") || "").trim();
+
+    if (!q) {
+      if (prompt) { prompt.hidden = false; }
+      if (head) { head.hidden = true; }
+      return;
+    }
+    if (prompt) { prompt.hidden = true; }
+    if (head) { head.hidden = false; }
+
+    var needle = q.toLowerCase();
+    var matches = CATALOGUE.filter(function (p) {
+      return (p.title + " " + (p.type || "") + " " + (p.tags || []).join(" "))
+        .toLowerCase().indexOf(needle) !== -1;
+    });
+
+    if (termsEl) { termsEl.textContent = q; }
+    if (countEl) {
+      countEl.textContent = matches.length + (matches.length === 1 ? " product" : " products");
+    }
+
+    if (!results) { return; }
+    if (!matches.length) {
+      results.innerHTML = '<p class="shop__empty">No results for “' + q + '”.</p>';
+      return;
+    }
+    results.innerHTML = matches.map(function (p) {
+      var dots = (p.swatches || []).map(function () {
+        return '<span class="dot" style="background:#cccccc"></span>';
+      }).join("");
+      return '<div class="shop__cell">' +
+        '<a class="product-card" href="' + p.url + '">' +
+          '<div class="product-card__image"><img src="' + p.image + '" alt="' + p.title + '" loading="lazy"></div>' +
+          '<div class="product-card__meta">' +
+            '<p class="product-card__title">' + p.title + '</p>' +
+            '<div class="product-card__info">' +
+              '<p class="product-card__price">' + PESO(p.price) + '</p>' +
+              '<span class="product-card__swatches">' + dots + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</a></div>';
+    }).join("");
+  }
+
+  /* ---------------------- Scroll-scrubbed video ----------------------
+     Apple's technique: the clip is an image sequence painted to a canvas, with
+     scroll position mapped to frame index. No <video>, so no decoder seeking —
+     scrubbing is frame-accurate forwards and backwards.
+
+     The section is tall and its inner pin is position:sticky (rather than a GSAP
+     pin) so the layout stays honest under Lenis; ScrollTrigger only reports
+     progress. */
+  function initScrollVideo() {
+    var section = document.querySelector("[data-scroll-video]");
+    if (!section || section.hasAttribute("data-sv-bound")) { return; }
+    section.setAttribute("data-sv-bound", "");
+
+    var canvas = section.querySelector("[data-scroll-video-canvas]");
+    if (!canvas) { return; }
+    var ctx = canvas.getContext("2d", { alpha: false });
+    // Pick the art-directed set before anything loads, so a phone never fetches
+    // the desktop frames. Chosen once — a mid-session rotation keeps the set it
+    // started with rather than re-downloading a hundred images.
+    var dirMobile = section.getAttribute("data-frame-dir-mobile");
+    var useMobile = dirMobile && window.matchMedia("(max-width: 899px)").matches;
+    var dir = useMobile ? dirMobile : section.getAttribute("data-frame-dir");
+    var count = parseInt(
+      useMobile ? section.getAttribute("data-frame-count-mobile")
+                : section.getAttribute("data-frame-count"), 10);
+    var pad = parseInt(section.getAttribute("data-frame-pad"), 10) || 3;
+    var ext = section.getAttribute("data-frame-ext") || "webp";
+    if (!dir || !count) { return; }
+
+    var loadingEl = section.querySelector("[data-scroll-video-loading]");
+    var progressEl = section.querySelector("[data-scroll-video-progress]");
+
+    var frames = new Array(count);
+    var ready = new Array(count);
+    var loaded = 0;
+    var currentIndex = -1;
+
+    var srcFor = function (i) {
+      var n = String(i + 1);
+      while (n.length < pad) { n = "0" + n; }
+      return dir + "/frame-" + n + "." + ext;
+    };
+
+    // Nearest already-decoded frame, so an un-preloaded index shows the closest
+    // real frame instead of blanking the canvas.
+    var nearestReady = function (i) {
+      if (ready[i]) { return i; }
+      for (var d = 1; d < count; d++) {
+        if (i - d >= 0 && ready[i - d]) { return i - d; }
+        if (i + d < count && ready[i + d]) { return i + d; }
+      }
+      return -1;
+    };
+
+    var align = section.getAttribute("data-frame-align") || "top";
+    var pan = section.getAttribute("data-frame-pan") !== "false";
+    // Punch-in, per breakpoint. 1 = plain cover.
+    var zoom = parseFloat(
+      useMobile ? (section.getAttribute("data-frame-zoom-mobile") || "1")
+                : (section.getAttribute("data-frame-zoom") || "1")) || 1;
+    var frameW = 0; // native source width, learned from the first decoded frame
+
+    var sizeCanvas = function () {
+      var w = canvas.clientWidth || section.clientWidth;
+      var h = canvas.clientHeight || window.innerHeight;
+      // The frames are already being upscaled to fill the viewport width, so a
+      // 2x backing store would only magnify that upscale — it cannot invent
+      // detail the source does not have, and costs 4x the memory per frame.
+      // Cap the backing store at the source width; the browser's own scaling of
+      // the canvas element up to CSS size is smoother than drawImage's.
+      var dpr = window.devicePixelRatio || 1;
+      var maxW = frameW ? Math.max(frameW, w) : w * Math.min(dpr, 2);
+      var scale = Math.min(dpr, maxW / Math.max(w, 1), 2);
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      ctx.imageSmoothingEnabled = true;
+      // "high" runs an expensive resampler on every paint. While scrubbing that
+      // cost lands on each scroll frame, and it cannot recover detail the 720px
+      // source never had — so the quality gain is invisible and the jank is not.
+      ctx.imageSmoothingQuality = "low";
+    };
+
+    // Scroll drives two things at once from a single progress value:
+    //   1. which frame plays (scrubbing), and
+    //   2. how far down the frame we are looking (panning).
+    // The frame fills the viewport width, so a portrait source overflows
+    // vertically — that overflow IS the pan distance. Section one sees the top
+    // of the composition, section three the bottom, which is what makes a pinned
+    // canvas read as a background travelling with the page.
+    var lastProgress = 0;
+
+    var draw = function (i, progress) {
+      var idx = nearestReady(i);
+      if (idx === -1) { return; }
+      if (typeof progress === "number") { lastProgress = progress; }
+      var img = frames[idx];
+      var cw = canvas.width, ch = canvas.height;
+      if (!cw || !ch) { return; }
+      var nw = img.naturalWidth, nh = img.naturalHeight;
+
+      // Draw only the slice of the source that is on screen — drawing the whole
+      // frame and letting the canvas clip wastes most of the scaling work.
+      //
+      // Cover means cropping whichever axis overflows. Fitting to width alone
+      // and clamping the slice height stretched the image whenever the frame
+      // was shorter than the viewport needed (portrait phones, landscape
+      // frames), because a short source got drawn into a tall canvas.
+      var targetAspect = cw / ch;
+      var srcAspect = nw / nh;
+      var sw, sh;
+
+      if (srcAspect > targetAspect) {
+        sw = nh * targetAspect; sh = nh;   // source wider → crop the sides
+      } else {
+        sw = nw; sh = nw / targetAspect;   // source taller → crop top/bottom
+      }
+
+      // Zoom shrinks the sampled rectangle, so less of the frame fills the same
+      // canvas — a punch-in. Clamped so it can never sample outside the image.
+      if (zoom > 1) {
+        sw = Math.min(nw, sw / zoom);
+        sh = Math.min(nh, sh / zoom);
+      }
+
+      var sx = (nw - sw) / 2;              // always centred horizontally
+      var maxSy = Math.max(0, nh - sh);    // vertical slack is what the pan uses
+      var sy;
+      if (pan && maxSy > 0) { sy = maxSy * lastProgress; }
+      else if (align === "bottom") { sy = maxSy; }
+      else if (align === "center") { sy = maxSy / 2; }
+      else { sy = 0; }
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+      currentIndex = idx;
+    };
+
+    // ScrollTrigger can fire several updates per animation frame under Lenis;
+    // painting on each one is wasted work. Coalesce to one draw per frame.
+    var pendingIndex = -1;
+    var pendingProgress = 0;
+    var rafId = 0;
+    var scheduleDraw = function (i, progress) {
+      pendingIndex = i;
+      pendingProgress = progress;
+      if (rafId) { return; }
+      rafId = requestAnimationFrame(function () {
+        rafId = 0;
+        draw(pendingIndex, pendingProgress);
+      });
+    };
+
+    var setProgressBar = function () {
+      if (progressEl) { progressEl.style.width = Math.round((loaded / count) * 100) + "%"; }
+      if (loaded >= count && loadingEl) { loadingEl.hidden = true; }
+    };
+
+    // Load order matters more than load speed. Fetching 1→N strictly in order
+    // means scrolling before the tail arrives snaps between distant frames —
+    // which reads as glitching until everything settles. Instead do coarse
+    // passes: every 16th frame, then every 8th, 4th, 2nd, then the rest. The
+    // whole scroll range is covered almost immediately at low temporal
+    // resolution (nearestReady fills the gaps) and sharpens as passes complete.
+    var order = (function () {
+      var seen = new Array(count);
+      var list = [];
+      for (var stride = 16; stride >= 1; stride = stride >> 1) {
+        for (var i = 0; i < count; i += stride) {
+          if (!seen[i]) { seen[i] = true; list.push(i); }
+        }
+      }
+      return list;
+    })();
+
+    var next = 0;
+    // Browsers cap parallel requests per host (~6 on HTTP/1.1, far more on
+    // HTTP/2 — which is what Shopify's CDN serves).
+    var CONCURRENCY = 8;
+    var pump = function () {
+      while (next < order.length && pumpActive < CONCURRENCY) {
+        (function (i) {
+          pumpActive++;
+          var img = new Image();
+          img.decoding = "async";
+          // Decode up front. Without this the first paint of each frame decodes
+          // synchronously mid-scroll, which is exactly when it hurts.
+          img.onload = (function (image, done) {
+            return function () {
+              if (image.decode) { image.decode().then(done).catch(done); }
+              else { done(); }
+            };
+          })(img, function () {
+            ready[i] = true; frames[i] = img; loaded++; pumpActive--;
+            // First frame tells us the source resolution — re-size the backing
+            // store now that we know what we are actually scaling from.
+            if (!frameW) { frameW = img.naturalWidth; sizeCanvas(); }
+            setProgressBar();
+            if (currentIndex === -1 || i === currentIndex) { draw(currentIndex === -1 ? 0 : currentIndex); }
+            pump();
+          });
+          img.onerror = function () { pumpActive--; loaded++; setProgressBar(); pump(); };
+          img.src = srcFor(i);
+        })(order[next]); // frame index from the interleaved order, not the cursor
+        next++;
+      }
+    };
+    var pumpActive = 0;
+
+    sizeCanvas();
+    pump();
+
+    window.addEventListener("resize", function () {
+      sizeCanvas();
+      draw(currentIndex < 0 ? 0 : currentIndex, lastProgress);
+    });
+
+    if (!motionOn) {
+      // No scrubbing without motion — the section collapses to one viewport in
+      // CSS, so just paint the opening frame when it arrives.
+      return;
+    }
+
+    ScrollTrigger.create({
+      trigger: section,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: function (self) {
+        var i = Math.min(count - 1, Math.max(0, Math.round(self.progress * (count - 1))));
+        // Every update matters — the pan moves continuously even while the same
+        // frame shows — but scheduleDraw collapses them to one paint per frame.
+        scheduleDraw(i, self.progress);
+      }
+    });
+  }
+
   function initFeatures() {
     initQty();
     initGallery();
@@ -412,6 +1114,12 @@
     initShop();
     initHeroCarousel();
     initAccordions();
+    initCartDrawer();
+    initAddToCart();
+    initHeaderSearch();
+    initPdpScroll();
+    initSearchPage();
+    initScrollVideo();
   }
 
   /* ===================== Motion layer ===================== */

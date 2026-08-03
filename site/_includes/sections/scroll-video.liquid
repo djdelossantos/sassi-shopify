@@ -1,0 +1,78 @@
+{%- comment -%}
+  Scroll-scrubbed video — the Apple technique: the clip is exported as a numbered
+  image sequence and painted to a <canvas>, with scroll position mapped to frame
+  index. No <video> element, so there is no decoder seeking and the scrub is
+  frame-accurate in both directions.
+
+  Layout: the section is N × 100vh tall. The canvas pin is position:sticky so it
+  holds for the whole run, and the copy panels are absolutely positioned over it —
+  one per 100vh — so the same background carries three sections of content.
+
+  Params:
+    dir        — folder of frames, e.g. "/assets/frames/travel-hero"
+    count      — number of frames
+    pad        — zero-padding width of the frame number (default 3)
+    ext        — file extension (default webp)
+    align      — vertical anchor of the frame: "top" | "center" | "bottom"
+    p1_heading / p1_copy … p3_heading / p3_copy — panel content
+{%- endcomment -%}
+{%- assign panels = 3 -%}
+<section class="scroll-video"
+         data-section="scroll-video"
+         data-section-theme="dark"
+         data-scroll-video
+         data-frame-dir="{{ dir }}"
+         data-frame-count="{{ count }}"
+         data-frame-pad="{{ pad | default: 3 }}"
+         data-frame-ext="{{ ext | default: 'webp' }}"
+         data-frame-align="{{ align | default: 'top' }}"
+         data-frame-pan="{{ pan | default: 'true' }}"
+         data-frame-zoom="{{ zoom | default: 1 }}"
+         data-frame-zoom-mobile="{{ zoom_mobile | default: 1 }}"
+         {%- comment -%} Art direction: phones get a portrait crop, since a 16:9
+           frame in a portrait viewport crops to a sliver. Only one set is ever
+           fetched — theme.js picks before any loading starts. {%- endcomment -%}
+         {% if dir_mobile %}data-frame-dir-mobile="{{ dir_mobile }}"
+         data-frame-count-mobile="{{ count_mobile | default: count }}"{% endif %}
+         style="--panels: {{ panels }}">
+  <div class="scroll-video__pin">
+    <canvas class="scroll-video__canvas" data-scroll-video-canvas aria-hidden="true"></canvas>
+    <noscript>
+      <img class="scroll-video__poster" src="{{ dir }}/frame-001.{{ ext | default: 'webp' }}" alt="">
+    </noscript>
+    {%- comment -%} Scrim over the footage: lifts contrast for the copy and hides
+      the softness of an upscaled source. {%- endcomment -%}
+    <div class="scroll-video__dim" style="--dim: {{ dim | default: 0.45 }}"></div>
+    {%- comment -%} Grain over the footage — breaks up the softness of an upscaled
+      source and adds texture. Sits above the scrim, below the copy. {%- endcomment -%}
+    <div class="scroll-video__noise" style="--noise: {{ noise | default: 0.12 }}"></div>
+    <div class="scroll-video__loading" data-scroll-video-loading>
+      <span class="scroll-video__loading-bar"><i data-scroll-video-progress></i></span>
+    </div>
+  </div>
+
+  {%- comment -%} Three 100vh panels riding over the one pinned background. {%- endcomment -%}
+  <div class="scroll-video__panels{% if text_align == 'left' %} scroll-video__panels--left{% endif %}">
+    <div class="scroll-video__panel">
+      <div class="scroll-video__overlay">
+        {%- if p1_eyebrow -%}<p class="scroll-video__eyebrow">{{ p1_eyebrow }}</p>{%- endif -%}
+        {%- if p1_heading -%}<h2 class="scroll-video__heading{% if p1_tone == 'brand' %} text-brand{% endif %}">{{ p1_heading }}</h2>{%- endif -%}
+        {%- if p1_copy -%}<p class="scroll-video__copy">{{ p1_copy }}</p>{%- endif -%}
+      </div>
+    </div>
+    <div class="scroll-video__panel">
+      <div class="scroll-video__overlay">
+        {%- if p2_eyebrow -%}<p class="scroll-video__eyebrow">{{ p2_eyebrow }}</p>{%- endif -%}
+        {%- if p2_heading -%}<h2 class="scroll-video__heading{% if p2_tone == 'brand' %} text-brand{% endif %}">{{ p2_heading }}</h2>{%- endif -%}
+        {%- if p2_copy -%}<p class="scroll-video__copy">{{ p2_copy }}</p>{%- endif -%}
+      </div>
+    </div>
+    <div class="scroll-video__panel">
+      <div class="scroll-video__overlay">
+        {%- if p3_eyebrow -%}<p class="scroll-video__eyebrow">{{ p3_eyebrow }}</p>{%- endif -%}
+        {%- if p3_heading -%}<h2 class="scroll-video__heading{% if p3_tone == 'brand' %} text-brand{% endif %}">{{ p3_heading }}</h2>{%- endif -%}
+        {%- if p3_copy -%}<p class="scroll-video__copy">{{ p3_copy }}</p>{%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
