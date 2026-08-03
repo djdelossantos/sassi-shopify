@@ -21,7 +21,10 @@
          data-section="scroll-video"
          data-section-theme="dark"
          data-scroll-video
-         data-frame-dir="{{ dir }}"
+         {%- comment -%} `| url` applies Eleventy's pathPrefix. EleventyHtmlBasePlugin
+           only rewrites href/src/srcset, so a path carried in a data- attribute has
+           to be prefixed here or it 404s under the /sassi-shopify/ subpath. {%- endcomment -%}
+         data-frame-dir="{{ dir | url }}"
          data-frame-count="{{ count }}"
          data-frame-pad="{{ pad | default: 3 }}"
          data-frame-ext="{{ ext | default: 'webp' }}"
@@ -32,7 +35,7 @@
          {%- comment -%} Art direction: phones get a portrait crop, since a 16:9
            frame in a portrait viewport crops to a sliver. Only one set is ever
            fetched — theme.js picks before any loading starts. {%- endcomment -%}
-         {% if dir_mobile %}data-frame-dir-mobile="{{ dir_mobile }}"
+         {% if dir_mobile %}data-frame-dir-mobile="{{ dir_mobile | url }}"
          data-frame-count-mobile="{{ count_mobile | default: count }}"{% endif %}
          style="--panels: {{ panels }}">
   <div class="scroll-video__pin">
