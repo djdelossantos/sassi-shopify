@@ -1,15 +1,24 @@
 {%- comment -%}
-  Affiliate program page — the pitch. The application form lives in the separate
-  'affiliate-form' section below it, so the (app-provided) form can be swapped or
-  restyled without touching any of this copy.
+  Affiliate program page.
 
-  Blocks are filtered by type rather than rendered in raw block_order, so a
-  merchant reordering things in the editor can't interleave a FAQ row into the
-  steps list. Same pattern as sections/contact.liquid.
+  One section, not two. The form has to sit in the right-hand column beside the
+  pitch, and Shopify renders sections as siblings — so a form living in its own
+  section could never become a column of this one. The application form is
+  therefore an "@app" block here (Shopify Forms or whatever replaces it), which
+  also means the provider can still be swapped without touching the pitch copy.
+
+  Reading order is deliberate. The form comes first in the DOM so that on mobile
+  — where the columns stack — it lands directly under the intro instead of after
+  the whole pitch. On desktop the grid puts it back on the right and makes it
+  sticky, so it stays in view while the supporting copy is read.
+
+  Content blocks are filtered by type rather than rendered in raw block_order,
+  so a merchant reordering things in the editor can't interleave a FAQ row into
+  the steps list. Same pattern as sections/contact.liquid.
 {%- endcomment -%}
 
-<section class="affiliate-page" data-section="affiliate-page">
-  <div class="contact__intro" data-section-theme="light">
+<section class="affiliate" data-section="affiliate">
+  <div class="contact__intro affiliate__intro" data-section-theme="light">
     <span class="noise" aria-hidden="true"></span>
     <div class="contact__intro-inner">
       <h1 class="contact__heading">
@@ -22,80 +31,112 @@
     </div>
   </div>
 
-  <div class="affiliate-page__body" data-section-theme="light">
+  <div class="affiliate__body" data-section-theme="light">
+    <div class="affiliate__grid">
 
-    {%- comment -%} The offer, up front and concrete — a peso figure converts far
-      better than a bare percentage. {%- endcomment -%}
-    {%- if section.settings.offer_figure != blank -%}
-      <div class="affiliate-offer reveal">
-        <p class="affiliate-offer__figure">{{ section.settings.offer_figure }}</p>
-        {%- if section.settings.offer_detail != blank -%}
-          <p class="affiliate-offer__detail">{{ section.settings.offer_detail }}</p>
+      {%- comment -%} First in the DOM on purpose — see the note above. {%- endcomment -%}
+      <div class="affiliate__form-col">
+        <div class="affiliate__form-card reveal" id="apply">
+          {%- if section.settings.form_heading != blank -%}
+            <h2 class="affiliate__form-title">{{ section.settings.form_heading }}</h2>
+          {%- endif -%}
+          {%- if section.settings.form_sub != blank -%}
+            <p class="affiliate__form-sub">{{ section.settings.form_sub }}</p>
+          {%- endif -%}
+
+          <div class="affiliate__slot">
+            {%- for block in section.blocks -%}
+              {%- case block.type -%}
+                {%- when '@app' -%}
+                  {% render block %}
+              {%- endcase -%}
+            {%- endfor -%}
+
+            {%- comment -%} Editor-only hint: never shown to customers, so an unfinished
+              page degrades to just the heading rather than leaking setup instructions. {%- endcomment -%}
+            {%- assign app_blocks = section.blocks | where: 'type', '@app' -%}
+            {%- if app_blocks.size == 0 and request.design_mode -%}
+              <p class="affiliate__slot-empty">
+                Add your application form here: click “Add block” in this section and choose your
+                form app (e.g. Shopify Forms).
+              </p>
+            {%- endif -%}
+          </div>
+
+          {%- if section.settings.fallback_label != blank and section.settings.fallback_url != blank -%}
+            <p class="affiliate__fallback">
+              <a href="{{ section.settings.fallback_url }}" target="_blank" rel="noopener noreferrer">{{ section.settings.fallback_label }}</a>
+            </p>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="affiliate__content">
+
+        {%- assign steps = section.blocks | where: 'type', 'step' -%}
+        {%- if steps.size > 0 -%}
+          <div class="affiliate__block reveal">
+            <h2 class="affiliate__title">{{ section.settings.steps_heading }}</h2>
+            <ol class="affiliate-steps">
+              {%- for block in steps -%}
+                <li class="affiliate-step" {{ block.shopify_attributes }}>
+                  <span class="affiliate-step__num" aria-hidden="true">{{ forloop.index }}</span>
+                  <h3 class="affiliate-step__title">{{ block.settings.title }}</h3>
+                  <p class="affiliate-step__copy">{{ block.settings.copy }}</p>
+                </li>
+              {%- endfor -%}
+            </ol>
+          </div>
         {%- endif -%}
-      </div>
-    {%- endif -%}
 
-    {%- assign steps = section.blocks | where: 'type', 'step' -%}
-    {%- if steps.size > 0 -%}
-      <div class="affiliate-block reveal">
-        <h2 class="affiliate-page__title">{{ section.settings.steps_heading }}</h2>
-        <ol class="affiliate-steps">
-          {%- for block in steps -%}
-            <li class="affiliate-step" {{ block.shopify_attributes }}>
-              <span class="affiliate-step__num" aria-hidden="true">{{ forloop.index }}</span>
-              <h3 class="affiliate-step__title">{{ block.settings.title }}</h3>
-              <p class="affiliate-step__copy">{{ block.settings.copy }}</p>
-            </li>
-          {%- endfor -%}
-        </ol>
-      </div>
-    {%- endif -%}
-
-    {%- assign reqs = section.blocks | where: 'type', 'requirement' -%}
-    {%- if reqs.size > 0 -%}
-      <div class="affiliate-block reveal">
-        <h2 class="affiliate-page__title">{{ section.settings.reqs_heading }}</h2>
-        <ul class="affiliate-reqs">
-          {%- for block in reqs -%}
-            <li {{ block.shopify_attributes }}>{{ block.settings.text }}</li>
-          {%- endfor -%}
-        </ul>
-        {%- if section.settings.reqs_note != blank -%}
-          <p class="affiliate-note">{{ section.settings.reqs_note }}</p>
+        {%- assign reqs = section.blocks | where: 'type', 'requirement' -%}
+        {%- if reqs.size > 0 -%}
+          <div class="affiliate__block reveal">
+            <h2 class="affiliate__title">{{ section.settings.reqs_heading }}</h2>
+            <ul class="affiliate-reqs">
+              {%- for block in reqs -%}
+                <li {{ block.shopify_attributes }}>{{ block.settings.text }}</li>
+              {%- endfor -%}
+            </ul>
+            {%- if section.settings.reqs_note != blank -%}
+              <p class="affiliate-note">{{ section.settings.reqs_note }}</p>
+            {%- endif -%}
+          </div>
         {%- endif -%}
-      </div>
-    {%- endif -%}
 
-    {%- assign channels = section.blocks | where: 'type', 'channel' -%}
-    {%- if channels.size > 0 -%}
-      <div class="affiliate-block reveal">
-        <h2 class="affiliate-page__title">{{ section.settings.channels_heading }}</h2>
-        <div class="affiliate-channels">
-          {%- for block in channels -%}
-            <div class="affiliate-channel" {{ block.shopify_attributes }}>
-              <h3 class="affiliate-channel__name">{{ block.settings.name }}</h3>
-              <p class="affiliate-channel__note">{{ block.settings.note }}</p>
+        {%- assign channels = section.blocks | where: 'type', 'channel' -%}
+        {%- if channels.size > 0 -%}
+          <div class="affiliate__block reveal">
+            <h2 class="affiliate__title">{{ section.settings.channels_heading }}</h2>
+            <div class="affiliate-channels">
+              {%- for block in channels -%}
+                <div class="affiliate-channel" {{ block.shopify_attributes }}>
+                  <h3 class="affiliate-channel__name">{{ block.settings.name }}</h3>
+                  <p class="affiliate-channel__note">{{ block.settings.note }}</p>
+                </div>
+              {%- endfor -%}
             </div>
-          {%- endfor -%}
-        </div>
-      </div>
-    {%- endif -%}
+          </div>
+        {%- endif -%}
 
-    {%- assign faqs = section.blocks | where: 'type', 'faq' -%}
-    {%- if faqs.size > 0 -%}
-      <div class="affiliate-block reveal">
-        <h2 class="affiliate-page__title">{{ section.settings.faq_heading }}</h2>
-        <div class="affiliate-faq">
-          {%- for block in faqs -%}
-            <details class="accordion" {{ block.shopify_attributes }}>
-              <summary>{{ block.settings.question }} {% render 'icon', name: 'plus' %}</summary>
-              <div class="accordion__body rte">{{ block.settings.answer }}</div>
-            </details>
-          {%- endfor -%}
-        </div>
-      </div>
-    {%- endif -%}
+        {%- assign faqs = section.blocks | where: 'type', 'faq' -%}
+        {%- if faqs.size > 0 -%}
+          <div class="affiliate__block reveal">
+            <h2 class="affiliate__title">{{ section.settings.faq_heading }}</h2>
+            <div class="affiliate-faq">
+              {%- for block in faqs -%}
+                <details class="accordion" {{ block.shopify_attributes }}>
+                  <summary>{{ block.settings.question }} {% render 'icon', name: 'plus' %}</summary>
+                  <div class="accordion__body rte">{{ block.settings.answer }}</div>
+                </details>
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
 
+      </div>
+
+    </div>
   </div>
 </section>
 
@@ -108,9 +149,11 @@
     { "type": "text", "id": "heading_accent", "label": "Heading accent (red)", "default": "share it." },
     { "type": "textarea", "id": "sub", "label": "Subtext", "default": "Partner with SASSi, share the bags you already carry, and earn on every sale." },
 
-    { "type": "header", "content": "The offer" },
-    { "type": "text", "id": "offer_figure", "label": "Headline figure", "default": "8% on every sale" },
-    { "type": "textarea", "id": "offer_detail", "label": "Detail", "default": "That's ₱263 to ₱343 for every bag sold with your code. Paid monthly by GCash or bank transfer." },
+    { "type": "header", "content": "Form", "info": "The form itself is an app block — add it with “Add block” below." },
+    { "type": "text", "id": "form_heading", "label": "Form heading", "default": "Apply to join" },
+    { "type": "textarea", "id": "form_sub", "label": "Form subtext", "default": "Takes a couple of minutes. We review every application by hand." },
+    { "type": "text", "id": "fallback_label", "label": "Fallback link label", "info": "Optional. Use if you'd rather link out to an external form than embed one." },
+    { "type": "url", "id": "fallback_url", "label": "Fallback link URL" },
 
     { "type": "header", "content": "Section headings" },
     { "type": "text", "id": "steps_heading", "label": "How it works heading", "default": "How it works" },
@@ -120,6 +163,7 @@
     { "type": "text", "id": "faq_heading", "label": "FAQ heading", "default": "Questions" }
   ],
   "blocks": [
+    { "type": "@app" },
     {
       "type": "step",
       "name": "Step",

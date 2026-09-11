@@ -998,51 +998,77 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 .page__body { padding: var(--space-40) var(--space-16) var(--space-48); }
 
 /* ==========================================================================
-   Affiliate program page — pitch (affiliate-page) + form slot (affiliate-form).
+   Affiliate program page — one section: supporting copy left, form right.
    Reuses .contact__intro for the header band and .accordion for the FAQ, so it
    inherits the content-page system rather than inventing a second one.
-   ========================================================================== */
-.affiliate-page__body { padding: var(--space-40) var(--space-16) var(--space-48); max-width: 760px; margin: 0 auto; }
-.affiliate-page__title {
-  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
-  letter-spacing: var(--letter-spacing-neg-0-3); margin-bottom: var(--space-16);
-}
-.affiliate-block { margin-top: var(--space-48); }
 
-/* The offer — the one number that has to land. Red rule + oversized figure. */
-.affiliate-offer {
-  border-left: 3px solid var(--color-bg-brand);
+   The type scale here is deliberately short. The page previously ran five sizes
+   and four weights (including a 48px offer figure), which read as noise rather
+   than hierarchy. It is now four steps and nothing else:
+     h1        — the intro band (inherited from .contact__heading)
+     24 / 800  — the form title, the one thing competing with h1
+     18 / 800  — block titles (24 on desktop)
+     16 / 700  — item titles (step, channel)
+     14        — every piece of body copy on the page
+   ========================================================================== */
+
+/* Shorter than Contact's: the point of this page is to reach the form, so the
+   intro gives context and gets out of the way. */
+.affiliate__intro { padding-bottom: var(--space-32); }
+
+.affiliate__body { padding: var(--space-40) var(--space-16) var(--space-48); }
+.affiliate__grid { display: grid; gap: var(--space-48); }
+
+/* ---- The form: the page's primary action ---- */
+/* A filled panel rather than a bordered one — the fields already carry obsidian
+   borders, and a box around boxes competes. The fill is what separates it. */
+.affiliate__form-card {
   background: var(--color-bg-subtle);
   padding: var(--space-24) var(--space-16);
 }
-.affiliate-offer__figure {
-  font-size: var(--font-size-32); font-weight: var(--font-weight-900);
-  line-height: 1.05; letter-spacing: var(--letter-spacing-neg-0-98);
+.affiliate__form-title {
+  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
+  letter-spacing: var(--letter-spacing-neg-0-3);
 }
-.affiliate-offer__detail {
-  margin-top: var(--space-8); font-size: var(--font-size-16);
-  line-height: 1.6; color: var(--color-text-secondary);
+.affiliate__form-sub {
+  margin-top: var(--space-8);
+  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-secondary);
+}
+.affiliate__slot { margin-top: var(--space-24); }
+.affiliate__slot-empty {
+  border: 1px dashed var(--color-border-default); padding: var(--space-24) var(--space-16);
+  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
+}
+.affiliate__fallback { margin-top: var(--space-16); font-size: var(--font-size-14); }
+.affiliate__fallback a { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--font-weight-700); }
+.affiliate__fallback a:hover { color: var(--color-bg-brand); }
+
+/* ---- Supporting copy ---- */
+.affiliate__content { display: flex; flex-direction: column; gap: var(--space-48); }
+.affiliate__title {
+  font-size: var(--font-size-18); font-weight: var(--font-weight-800);
+  letter-spacing: var(--letter-spacing-neg-0-3); margin-bottom: var(--space-16);
 }
 
 .affiliate-steps { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-24); }
-.affiliate-step { display: grid; grid-template-columns: 32px 1fr; column-gap: var(--space-16); row-gap: 4px; }
+.affiliate-step { display: grid; grid-template-columns: 20px 1fr; column-gap: var(--space-16); row-gap: 4px; }
 .affiliate-step__num {
   grid-row: 1 / span 2; align-self: start;
-  font-size: var(--font-size-18); font-weight: var(--font-weight-900);
-  color: var(--color-bg-brand); line-height: 1.35;
+  font-size: var(--font-size-16); font-weight: var(--font-weight-800);
+  color: var(--color-bg-brand); line-height: 1.5;
 }
-.affiliate-step__title { font-size: var(--font-size-18); font-weight: var(--font-weight-700); }
-.affiliate-step__copy { font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary); }
+.affiliate-step__title { font-size: var(--font-size-16); font-weight: var(--font-weight-700); }
+.affiliate-step__copy { font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-secondary); }
 
 .affiliate-reqs { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-8); }
 .affiliate-reqs li {
   position: relative; padding-left: var(--space-24);
-  font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary);
+  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-secondary);
 }
 /* Square bullet, matching the theme's zero-radius language. */
 .affiliate-reqs li::before {
-  content: ""; position: absolute; left: 0; top: 0.6em;
-  width: 8px; height: 8px; background: var(--color-bg-brand);
+  content: ""; position: absolute; left: 0; top: 0.55em;
+  width: 6px; height: 6px; background: var(--color-bg-brand);
 }
 .affiliate-note {
   margin-top: var(--space-16); padding-top: var(--space-16);
@@ -1050,42 +1076,30 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
 }
 
-.affiliate-channels { display: grid; gap: var(--space-16); }
-.affiliate-channel { border: 1px solid var(--color-border-subtle); padding: var(--space-24) var(--space-16); }
+/* Rule on one edge instead of a full box — same grouping, far less weight, and
+   it survives the narrower column the two-up layout leaves for content. */
+.affiliate-channels { display: grid; gap: var(--space-24); }
+.affiliate-channel { border-left: 2px solid var(--color-neutral-grey-35); padding-left: var(--space-16); }
 .affiliate-channel__name { font-size: var(--font-size-16); font-weight: var(--font-weight-700); margin-bottom: 4px; }
 .affiliate-channel__note { font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-secondary); }
 
 .affiliate-faq { margin-top: var(--space-8); }
 
-/* Form slot — visually separated from the pitch so it reads as "the action". */
-.affiliate-apply {
-  border-top: 1px solid var(--color-neutral-grey-35);
-  padding: var(--space-48) var(--space-16);
-}
-.affiliate-apply__inner { max-width: 760px; margin: 0 auto; }
-.affiliate-apply__title {
-  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
-  letter-spacing: var(--letter-spacing-neg-0-3);
-}
-.affiliate-apply__sub { margin-top: var(--space-8); font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary); }
-.affiliate-apply__slot { margin-top: var(--space-24); }
-/* The form here is rendered by an app block, so we can't put .field on its
-   inputs — match the shared field by element instead. Scoped to the slot so it
-   can't leak into any other app block on the page. An app that ships its own
-   heavier styles of its own, and it ships them with enough specificity to beat
-   a plain descendant selector — which is exactly what happened: the fields kept
-   the app's light-grey border. Hence !important, confined to the appearance
-   properties and scoped to this slot so it can't reach any other app block.
-   Layout (width/height/padding) is left un-forced so the app can still size its
-   own fields.
+/* ---- App-rendered form fields ----
+   The form is an app block, so its inputs can't carry .field — match the shared
+   field by element instead, scoped to the slot so it can't leak into any other
+   app block. The app ships its own styles with enough specificity to beat a
+   plain descendant selector (it did: the fields kept a light-grey border), so
+   the appearance properties are forced. Layout is left un-forced so the app can
+   still size its own fields.
 
    Selectors are written by element and by class-substring, because the app's
    class names are its own and can change; between the two, one of them lands. */
-.affiliate-apply__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
-.affiliate-apply__slot select,
-.affiliate-apply__slot textarea,
-.affiliate-apply__slot [class*="field__input"],
-.affiliate-apply__slot [class*="input"]:not(label):not(fieldset):not(div) {
+.affiliate__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
+.affiliate__slot select,
+.affiliate__slot textarea,
+.affiliate__slot [class*="field__input"],
+.affiliate__slot [class*="input"]:not(label):not(fieldset):not(div) {
   font-family: inherit; font-size: var(--font-size-14);
   color: var(--field-color);
   background-color: transparent !important;
@@ -1093,50 +1107,55 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   border-radius: 0 !important;
   box-shadow: none !important;
 }
-.affiliate-apply__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
-.affiliate-apply__slot select {
+.affiliate__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
+.affiliate__slot select {
   height: 48px; padding: 0 var(--space-16);
 }
-.affiliate-apply__slot textarea { padding: var(--space-16); line-height: 1.6; resize: vertical; }
+.affiliate__slot textarea { padding: var(--space-16); line-height: 1.6; resize: vertical; }
 
 /* Native select borders are drawn by the OS on some platforms and ignore
    border-color until appearance is reset — without this the dropdown stays
    light grey however specific the rule. Resetting it also removes the built-in
    arrow, so draw one back in as an inline SVG background. */
-.affiliate-apply__slot select {
+.affiliate__slot select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   padding-right: var(--space-40);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2312100e' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--space-16) center;
 }
-.affiliate-apply__slot ::placeholder { color: var(--field-placeholder); opacity: 1; }
-.affiliate-apply__slot input:focus,
-.affiliate-apply__slot select:focus,
-.affiliate-apply__slot textarea:focus {
+.affiliate__slot ::placeholder { color: var(--field-placeholder); opacity: 1; }
+.affiliate__slot input:focus,
+.affiliate__slot select:focus,
+.affiliate__slot textarea:focus {
   outline: none;
   border-color: var(--field-border-focus) !important;
   box-shadow: inset 0 0 0 1px var(--field-border-focus) !important;
 }
-.affiliate-apply__empty {
-  border: 1px dashed var(--color-border-default); padding: var(--space-24) var(--space-16);
-  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
-}
-.affiliate-apply__fallback { margin-top: var(--space-16); font-size: var(--font-size-16); }
-.affiliate-apply__fallback a { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--font-weight-700); }
-.affiliate-apply__fallback a:hover { color: var(--color-bg-brand); }
 
 @media (min-width: 900px) {
-  .affiliate-page__body { padding: var(--space-40) var(--space-40) var(--space-64); }
-  .affiliate-page__title { font-size: var(--font-size-32); }
-  .affiliate-block { margin-top: var(--space-64); }
-  .affiliate-offer { padding: var(--space-32); }
-  .affiliate-offer__figure { font-size: var(--font-size-48); }
-  .affiliate-channels { grid-template-columns: 1fr 1fr; gap: var(--space-24); }
-  .affiliate-channel { padding: var(--space-24); }
-  .affiliate-apply { padding: var(--space-64) var(--space-40) var(--space-80); }
-  .affiliate-apply__title { font-size: var(--font-size-32); }
+  .affiliate__intro { padding-bottom: var(--space-48); }
+  .affiliate__body { padding: var(--space-64) var(--space-40) var(--space-80); }
+  /* Content left, form right — the reverse of DOM order, which puts the form
+     first so it leads on mobile. align-items:start is what lets the form column
+     be sticky rather than stretching to the content's height. */
+  .affiliate__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+    gap: clamp(40px, 5vw, 80px);
+    align-items: start;
+  }
+  .affiliate__content { grid-column: 1; grid-row: 1; gap: var(--space-64); }
+  .affiliate__form-col { grid-column: 2; grid-row: 1; position: sticky; top: 88px; }
+  .affiliate__form-card { padding: var(--space-32); }
+  .affiliate__title { font-size: var(--font-size-24); }
 }
+
+/* Sticky needs a real scroll distance to be worth it; below this the form is
+   taller than the viewport and sticking just hides its own submit button. */
+@media (min-width: 900px) and (max-height: 700px) {
+  .affiliate__form-col { position: static; }
+}
+
 /* #main-scoped: Shopify's own policy-*.css (injected on every policy page,
    load order outside our control) sets the same .shopify-policy__container
    class to max-width:65ch + 20px padding. Same specificity as a bare class

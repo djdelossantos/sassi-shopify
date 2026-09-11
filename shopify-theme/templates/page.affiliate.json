@@ -1,6 +1,6 @@
 {
   "sections": {
-    "pitch": {
+    "affiliate": {
       "type": "affiliate-page",
       "blocks": {
         "step-1": {
@@ -50,6 +50,13 @@
             "note": "Already active on these? Approved affiliates can also earn through each platform's own creator program."
           }
         },
+        "faq-earn": {
+          "type": "faq",
+          "settings": {
+            "question": "How much do I earn?",
+            "answer": "<p>8% of every sale made with your code — that's roughly ₱263 to ₱343 per bag, depending on the model.</p>"
+          }
+        },
         "faq-pay": {
           "type": "faq",
           "settings": {
@@ -95,6 +102,7 @@
         "req-3",
         "channel-1",
         "channel-2",
+        "faq-earn",
         "faq-pay",
         "faq-track",
         "faq-own",
@@ -105,22 +113,15 @@
         "heading": "Get paid to",
         "heading_accent": "share it.",
         "sub": "Partner with SASSi, share the bags you already carry, and earn on every sale.",
-        "offer_figure": "8% on every sale",
-        "offer_detail": "That's ₱263 to ₱343 for every bag sold with your code. Paid monthly by GCash or bank transfer.",
+        "form_heading": "Apply to join",
+        "form_sub": "Takes a couple of minutes. We review every application by hand.",
         "steps_heading": "How it works",
         "reqs_heading": "Who we're looking for",
         "reqs_note": "We read every application by hand. A smaller, engaged audience that genuinely fits SASSi beats a big one that doesn't.",
         "channels_heading": "Where you can earn",
         "faq_heading": "Questions"
       }
-    },
-    "apply": {
-      "type": "affiliate-form",
-      "settings": {
-        "heading": "Apply to join",
-        "sub": "Takes a couple of minutes. We review every application by hand."
-      }
     }
   },
-  "order": ["pitch", "apply"]
+  "order": ["affiliate"]
 }
