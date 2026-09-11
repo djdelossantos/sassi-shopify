@@ -21,7 +21,7 @@
           "type": "step",
           "settings": {
             "title": "Share and earn",
-            "copy": "Post it, share it, carry it. You earn 8% on every sale made with your code — and your audience gets a discount too."
+            "copy": "Post it, share it, carry it. You earn 6% on every sale made with your code — and your audience gets a discount too."
           }
         },
         "req-1": {
@@ -54,7 +54,7 @@
           "type": "faq",
           "settings": {
             "question": "How much do I earn?",
-            "answer": "<p>8% of every sale made with your code — that's roughly ₱263 to ₱343 per bag, depending on the model.</p>"
+            "answer": "<p>A commission on every sale made with your code — see \"How it works\" above for the current rate.</p>"
           }
         },
         "faq-pay": {
