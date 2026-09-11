@@ -1072,29 +1072,51 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 /* The form here is rendered by an app block, so we can't put .field on its
    inputs — match the shared field by element instead. Scoped to the slot so it
    can't leak into any other app block on the page. An app that ships its own
-   heavier styles may still win on specificity; if that happens, the fix is the
-   app's own style settings, not more !important here. */
-.affiliate-apply__slot input[type="text"],
-.affiliate-apply__slot input[type="email"],
-.affiliate-apply__slot input[type="tel"],
-.affiliate-apply__slot input[type="url"],
-.affiliate-apply__slot input[type="number"],
+   heavier styles of its own, and it ships them with enough specificity to beat
+   a plain descendant selector — which is exactly what happened: the fields kept
+   the app's light-grey border. Hence !important, confined to the appearance
+   properties and scoped to this slot so it can't reach any other app block.
+   Layout (width/height/padding) is left un-forced so the app can still size its
+   own fields.
+
+   Selectors are written by element and by class-substring, because the app's
+   class names are its own and can change; between the two, one of them lands. */
+.affiliate-apply__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
 .affiliate-apply__slot select,
-.affiliate-apply__slot textarea {
-  width: 100%; min-width: 0;
-  height: 48px; padding: 0 var(--space-16);
+.affiliate-apply__slot textarea,
+.affiliate-apply__slot [class*="field__input"],
+.affiliate-apply__slot [class*="input"]:not(label):not(fieldset):not(div) {
   font-family: inherit; font-size: var(--font-size-14);
-  color: var(--field-color); background: transparent;
-  border: 1px solid var(--field-border); border-radius: 0;
+  color: var(--field-color);
+  background-color: transparent !important;
+  border: 1px solid var(--field-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
-.affiliate-apply__slot textarea { height: auto; padding: var(--space-16); line-height: 1.6; resize: vertical; }
+.affiliate-apply__slot input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="hidden"]),
+.affiliate-apply__slot select {
+  height: 48px; padding: 0 var(--space-16);
+}
+.affiliate-apply__slot textarea { padding: var(--space-16); line-height: 1.6; resize: vertical; }
+
+/* Native select borders are drawn by the OS on some platforms and ignore
+   border-color until appearance is reset — without this the dropdown stays
+   light grey however specific the rule. Resetting it also removes the built-in
+   arrow, so draw one back in as an inline SVG background. */
+.affiliate-apply__slot select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  padding-right: var(--space-40);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2312100e' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-16) center;
+}
 .affiliate-apply__slot ::placeholder { color: var(--field-placeholder); opacity: 1; }
 .affiliate-apply__slot input:focus,
 .affiliate-apply__slot select:focus,
 .affiliate-apply__slot textarea:focus {
   outline: none;
-  border-color: var(--field-border-focus);
-  box-shadow: inset 0 0 0 1px var(--field-border-focus);
+  border-color: var(--field-border-focus) !important;
+  box-shadow: inset 0 0 0 1px var(--field-border-focus) !important;
 }
 .affiliate-apply__empty {
   border: 1px dashed var(--color-border-default); padding: var(--space-24) var(--space-16);
