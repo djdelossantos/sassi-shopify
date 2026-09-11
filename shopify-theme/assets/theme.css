@@ -80,8 +80,8 @@ h1, h2, h3, h4, p { font-weight: inherit; }
 /* Restated rather than left to inherit, so a light block nested inside a dark
    one (or vice versa) gets its own set instead of the ancestor's. */
 [data-section-theme="light"] {
-  --field-border: var(--color-border-default);
-  --field-border-focus: var(--color-text-primary);
+  --field-border: var(--color-obsidian-black-100);
+  --field-border-focus: var(--color-obsidian-black-100);
   --field-color: var(--color-text-primary);
   --field-placeholder: var(--color-text-secondary);
 }
@@ -102,7 +102,15 @@ textarea.field { height: auto; padding: var(--space-16); line-height: 1.6; resiz
 /* opacity:1 because Firefox dims placeholders by default, which would double up
    with the already-muted --field-placeholder. */
 .field::placeholder { color: var(--field-placeholder); opacity: 1; }
-.field:focus { outline: none; border-color: var(--field-border-focus); }
+/* The resting border is already obsidian on light backgrounds, so a focus state
+   that only swaps border-colour would be invisible there. The inset shadow
+   doubles the line to 2px instead — visible on both themes, and it can't shift
+   layout the way a thicker border would. */
+.field:focus {
+  outline: none;
+  border-color: var(--field-border-focus);
+  box-shadow: inset 0 0 0 1px var(--field-border-focus);
+}
 
 /* ---- Header ----
    Mobile (Figma 390x60): solid obsidian bar, content always white.
@@ -1083,7 +1091,11 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 .affiliate-apply__slot ::placeholder { color: var(--field-placeholder); opacity: 1; }
 .affiliate-apply__slot input:focus,
 .affiliate-apply__slot select:focus,
-.affiliate-apply__slot textarea:focus { outline: none; border-color: var(--field-border-focus); }
+.affiliate-apply__slot textarea:focus {
+  outline: none;
+  border-color: var(--field-border-focus);
+  box-shadow: inset 0 0 0 1px var(--field-border-focus);
+}
 .affiliate-apply__empty {
   border: 1px dashed var(--color-border-default); padding: var(--space-24) var(--space-16);
   font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
