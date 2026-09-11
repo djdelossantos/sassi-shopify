@@ -6,6 +6,8 @@ site/_site/
 
 # QA artifacts — screenshots, reports, harness scratch
 site/qa/
+# same harness writing to a literal "undefined" path when its out-dir is unset
+site/undefined/
 
 # machine-specific agent/editor config (keep launch.json shared)
 .claude/settings.local.json

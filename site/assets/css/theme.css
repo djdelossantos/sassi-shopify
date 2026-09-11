@@ -57,6 +57,36 @@ h1, h2, h3, h4, p { font-weight: inherit; }
   100% { transform: translate(0, 0);        opacity: 1; }
 }
 
+/* ---- Form fields (shared) ----
+   Mirrors the same block in shopify-theme/assets/theme.css — keep the two in
+   step. The footer's "Join SASSi" input is the canonical field: square corners,
+   hairline border, transparent fill, 48px tall to match .btn. Colours come from
+   custom properties so one rule serves both backgrounds; light is the default
+   and data-section-theme="dark" flips them. */
+:root,
+[data-section-theme="light"] {
+  --field-border: var(--color-border-default);
+  --field-border-focus: var(--color-text-primary);
+  --field-color: var(--color-text-primary);
+  --field-placeholder: var(--color-text-secondary);
+}
+[data-section-theme="dark"] {
+  --field-border: rgba(255, 255, 255, 0.9);
+  --field-border-focus: var(--color-white-100);
+  --field-color: var(--color-white-100);
+  --field-placeholder: rgba(255, 255, 255, 0.6);
+}
+.field {
+  width: 100%; min-width: 0;
+  height: 48px; padding: 0 var(--space-16);
+  font-family: inherit; font-size: var(--font-size-14);
+  color: var(--field-color); background: transparent;
+  border: 1px solid var(--field-border); border-radius: 0;
+}
+textarea.field { height: auto; padding: var(--space-16); line-height: 1.6; resize: vertical; }
+.field::placeholder { color: var(--field-placeholder); opacity: 1; }
+.field:focus { outline: none; border-color: var(--field-border-focus); }
+
 /* ---- Header ----
    Mobile (Figma 390x60): solid obsidian bar, content always white.
    Desktop: transparent overlay with a subtle #12100E 50%→0% scrim; content
@@ -398,13 +428,6 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
 .site-footer__join-title { font-size: var(--font-size-24); font-weight: var(--font-weight-900); }
 .site-footer__join-copy { font-size: var(--font-size-14); line-height: 1.5; }
 .site-footer__form { display: flex; flex-direction: column; gap: 12px; margin-top: var(--space-8); }
-.site-footer__input {
-  height: 48px; padding: 0 var(--space-16);
-  background: transparent; border: 1px solid rgba(255,255,255,0.9);
-  color: var(--color-white-100); font: inherit; font-size: var(--font-size-14);
-  border-radius: 0;
-}
-.site-footer__input::placeholder { color: rgba(255,255,255,0.6); }
 .site-footer__links { display: flex; flex-direction: column; gap: var(--space-32); }
 .site-footer__col h3 {
   font-size: var(--font-size-16); font-weight: var(--font-weight-900);
