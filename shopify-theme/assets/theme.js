@@ -829,7 +829,7 @@
      instead of throwing. */
   function initShopifyFormsStyle() {
     // Only bother on pages that actually host a form embed.
-    if (!document.querySelector(".affiliate-apply__slot, shopify-forms-embed, #app-embed")) { return; }
+    if (!document.querySelector(".affiliate-page__slot, shopify-forms-embed, #app-embed")) { return; }
 
     var STYLE_ID = "sassi-forms-style";
     var css = [
@@ -850,12 +850,15 @@
       /* the app caps its form container at 450px; lift it so the fields fill our
          section the way the Contact form fills its column */
       '[class*="formContainer"] { max-width: 100% !important; }',
-      /* Match the Contact form's solid 1px #757575 border. The app paints this as
-         a soft box-shadow ring, so replace the ring rather than adding a border.
-         :not([aria-invalid="true"]) leaves the app's red error ring intact, and the
-         :focus rule keeps a visible (darker, thicker) focus indicator. */
+      /* Match the Contact form's solid 1px obsidian border (#12100e — the
+         --color-obsidian-black-100 token; this CSS lives in a shadow root, where
+         the host document's custom properties are not in scope, so the literal
+         is unavoidable). The app paints this as a soft box-shadow ring, so
+         replace the ring rather than adding a border. :not([aria-invalid="true"])
+         leaves the app's red error ring intact, and the :focus rule keeps a
+         visible (thicker) focus indicator. */
       'input:not([aria-invalid="true"]), textarea:not([aria-invalid="true"]), select:not([aria-invalid="true"]) {',
-      '  box-shadow: 0 0 0 1px #757575 !important;',
+      '  box-shadow: 0 0 0 1px #12100e !important;',
       '}',
       'input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 2px #12100e !important; }',
       /* Square the corners and set the type size — nothing else.
@@ -865,7 +868,7 @@
          keyboard focus ring. border-radius still squares a box-shadow edge. */
       'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select {',
       '  border-radius: 0 !important;',
-      '  font-size: 16px !important;',
+      '  font-size: 14px !important;',
       '}',
       /* NOTE: no blanket label rule. These are floating labels sitting *over* the
          input (see aria-labelledby); bolding/darkening them makes an empty field

@@ -17,8 +17,8 @@
   the steps list. Same pattern as sections/contact.liquid.
 {%- endcomment -%}
 
-<section class="affiliate" data-section="affiliate">
-  <div class="contact__intro affiliate__intro" data-section-theme="light">
+<section class="affiliate-page" data-section="affiliate-page">
+  <div class="contact__intro affiliate-page__intro" data-section-theme="light">
     <span class="noise" aria-hidden="true"></span>
     <div class="contact__intro-inner">
       <h1 class="contact__heading">
@@ -31,20 +31,20 @@
     </div>
   </div>
 
-  <div class="affiliate__body" data-section-theme="light">
-    <div class="affiliate__grid">
+  <div class="affiliate-page__body" data-section-theme="light">
+    <div class="affiliate-page__grid">
 
       {%- comment -%} First in the DOM on purpose — see the note above. {%- endcomment -%}
-      <div class="affiliate__form-col">
-        <div class="affiliate__form-card reveal" id="apply">
+      <div class="affiliate-page__form-col">
+        <div class="affiliate-page__form-card reveal" id="apply">
           {%- if section.settings.form_heading != blank -%}
-            <h2 class="affiliate__form-title">{{ section.settings.form_heading }}</h2>
+            <h2 class="affiliate-page__form-title">{{ section.settings.form_heading }}</h2>
           {%- endif -%}
           {%- if section.settings.form_sub != blank -%}
-            <p class="affiliate__form-sub">{{ section.settings.form_sub }}</p>
+            <p class="affiliate-page__form-sub">{{ section.settings.form_sub }}</p>
           {%- endif -%}
 
-          <div class="affiliate__slot">
+          <div class="affiliate-page__slot">
             {%- for block in section.blocks -%}
               {%- case block.type -%}
                 {%- when '@app' -%}
@@ -56,7 +56,7 @@
               page degrades to just the heading rather than leaking setup instructions. {%- endcomment -%}
             {%- assign app_blocks = section.blocks | where: 'type', '@app' -%}
             {%- if app_blocks.size == 0 and request.design_mode -%}
-              <p class="affiliate__slot-empty">
+              <p class="affiliate-page__slot-empty">
                 Add your application form here: click “Add block” in this section and choose your
                 form app (e.g. Shopify Forms).
               </p>
@@ -64,19 +64,19 @@
           </div>
 
           {%- if section.settings.fallback_label != blank and section.settings.fallback_url != blank -%}
-            <p class="affiliate__fallback">
+            <p class="affiliate-page__fallback">
               <a href="{{ section.settings.fallback_url }}" target="_blank" rel="noopener noreferrer">{{ section.settings.fallback_label }}</a>
             </p>
           {%- endif -%}
         </div>
       </div>
 
-      <div class="affiliate__content">
+      <div class="affiliate-page__content">
 
         {%- assign steps = section.blocks | where: 'type', 'step' -%}
         {%- if steps.size > 0 -%}
-          <div class="affiliate__block reveal">
-            <h2 class="affiliate__title">{{ section.settings.steps_heading }}</h2>
+          <div class="affiliate-page__block reveal">
+            <h2 class="affiliate-page__title">{{ section.settings.steps_heading }}</h2>
             <ol class="affiliate-steps">
               {%- for block in steps -%}
                 <li class="affiliate-step" {{ block.shopify_attributes }}>
@@ -91,8 +91,8 @@
 
         {%- assign reqs = section.blocks | where: 'type', 'requirement' -%}
         {%- if reqs.size > 0 -%}
-          <div class="affiliate__block reveal">
-            <h2 class="affiliate__title">{{ section.settings.reqs_heading }}</h2>
+          <div class="affiliate-page__block reveal">
+            <h2 class="affiliate-page__title">{{ section.settings.reqs_heading }}</h2>
             <ul class="affiliate-reqs">
               {%- for block in reqs -%}
                 <li {{ block.shopify_attributes }}>{{ block.settings.text }}</li>
@@ -106,8 +106,8 @@
 
         {%- assign channels = section.blocks | where: 'type', 'channel' -%}
         {%- if channels.size > 0 -%}
-          <div class="affiliate__block reveal">
-            <h2 class="affiliate__title">{{ section.settings.channels_heading }}</h2>
+          <div class="affiliate-page__block reveal">
+            <h2 class="affiliate-page__title">{{ section.settings.channels_heading }}</h2>
             <div class="affiliate-channels">
               {%- for block in channels -%}
                 <div class="affiliate-channel" {{ block.shopify_attributes }}>
@@ -121,8 +121,8 @@
 
         {%- assign faqs = section.blocks | where: 'type', 'faq' -%}
         {%- if faqs.size > 0 -%}
-          <div class="affiliate__block reveal">
-            <h2 class="affiliate__title">{{ section.settings.faq_heading }}</h2>
+          <div class="affiliate-page__block reveal">
+            <h2 class="affiliate-page__title">{{ section.settings.faq_heading }}</h2>
             <div class="affiliate-faq">
               {%- for block in faqs -%}
                 <details class="accordion" {{ block.shopify_attributes }}>
