@@ -1141,8 +1141,11 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   /* Content left, form right — the reverse of DOM order, which puts the form
      first so it leads on mobile. align-items:start is what lets the form column
      be sticky rather than stretching to the content's height. */
+  /* 50/50. minmax(0, 1fr) rather than a bare 1fr: grid's default min-content
+     floor would let a long unbroken string (a URL in the FAQ copy, say) push its
+     column past half and knock the split off. */
   .affiliate-page__grid {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: clamp(40px, 5vw, 80px);
     align-items: start;
   }
