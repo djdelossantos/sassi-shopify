@@ -1,0 +1,157 @@
+{%- comment -%}
+  Affiliate program page — the pitch. The application form lives in the separate
+  'affiliate-form' section below it, so the (app-provided) form can be swapped or
+  restyled without touching any of this copy.
+
+  Blocks are filtered by type rather than rendered in raw block_order, so a
+  merchant reordering things in the editor can't interleave a FAQ row into the
+  steps list. Same pattern as sections/contact.liquid.
+{%- endcomment -%}
+
+<section class="affiliate-page" data-section="affiliate-page">
+  <div class="contact__intro" data-section-theme="light">
+    <span class="noise" aria-hidden="true"></span>
+    <div class="contact__intro-inner">
+      <h1 class="contact__heading">
+        {{ section.settings.heading }}
+        {%- if section.settings.heading_accent != blank %} <span class="text-brand">{{ section.settings.heading_accent }}</span>{% endif -%}
+      </h1>
+      {%- if section.settings.sub != blank -%}
+        <p class="contact__sub">{{ section.settings.sub }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="affiliate-page__body" data-section-theme="light">
+
+    {%- comment -%} The offer, up front and concrete — a peso figure converts far
+      better than a bare percentage. {%- endcomment -%}
+    {%- if section.settings.offer_figure != blank -%}
+      <div class="affiliate-offer reveal">
+        <p class="affiliate-offer__figure">{{ section.settings.offer_figure }}</p>
+        {%- if section.settings.offer_detail != blank -%}
+          <p class="affiliate-offer__detail">{{ section.settings.offer_detail }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- assign steps = section.blocks | where: 'type', 'step' -%}
+    {%- if steps.size > 0 -%}
+      <div class="affiliate-block reveal">
+        <h2 class="affiliate-page__title">{{ section.settings.steps_heading }}</h2>
+        <ol class="affiliate-steps">
+          {%- for block in steps -%}
+            <li class="affiliate-step" {{ block.shopify_attributes }}>
+              <span class="affiliate-step__num" aria-hidden="true">{{ forloop.index }}</span>
+              <h3 class="affiliate-step__title">{{ block.settings.title }}</h3>
+              <p class="affiliate-step__copy">{{ block.settings.copy }}</p>
+            </li>
+          {%- endfor -%}
+        </ol>
+      </div>
+    {%- endif -%}
+
+    {%- assign reqs = section.blocks | where: 'type', 'requirement' -%}
+    {%- if reqs.size > 0 -%}
+      <div class="affiliate-block reveal">
+        <h2 class="affiliate-page__title">{{ section.settings.reqs_heading }}</h2>
+        <ul class="affiliate-reqs">
+          {%- for block in reqs -%}
+            <li {{ block.shopify_attributes }}>{{ block.settings.text }}</li>
+          {%- endfor -%}
+        </ul>
+        {%- if section.settings.reqs_note != blank -%}
+          <p class="affiliate-note">{{ section.settings.reqs_note }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- assign channels = section.blocks | where: 'type', 'channel' -%}
+    {%- if channels.size > 0 -%}
+      <div class="affiliate-block reveal">
+        <h2 class="affiliate-page__title">{{ section.settings.channels_heading }}</h2>
+        <div class="affiliate-channels">
+          {%- for block in channels -%}
+            <div class="affiliate-channel" {{ block.shopify_attributes }}>
+              <h3 class="affiliate-channel__name">{{ block.settings.name }}</h3>
+              <p class="affiliate-channel__note">{{ block.settings.note }}</p>
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- endif -%}
+
+    {%- assign faqs = section.blocks | where: 'type', 'faq' -%}
+    {%- if faqs.size > 0 -%}
+      <div class="affiliate-block reveal">
+        <h2 class="affiliate-page__title">{{ section.settings.faq_heading }}</h2>
+        <div class="affiliate-faq">
+          {%- for block in faqs -%}
+            <details class="accordion" {{ block.shopify_attributes }}>
+              <summary>{{ block.settings.question }} {% render 'icon', name: 'plus' %}</summary>
+              <div class="accordion__body rte">{{ block.settings.answer }}</div>
+            </details>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Affiliate page",
+  "settings": [
+    { "type": "header", "content": "Intro" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Get paid to" },
+    { "type": "text", "id": "heading_accent", "label": "Heading accent (red)", "default": "share it." },
+    { "type": "textarea", "id": "sub", "label": "Subtext", "default": "Partner with SASSi, share the bags you already carry, and earn on every sale." },
+
+    { "type": "header", "content": "The offer" },
+    { "type": "text", "id": "offer_figure", "label": "Headline figure", "default": "8% on every sale" },
+    { "type": "textarea", "id": "offer_detail", "label": "Detail", "default": "That's ₱263 to ₱343 for every bag sold with your code. Paid monthly by GCash or bank transfer." },
+
+    { "type": "header", "content": "Section headings" },
+    { "type": "text", "id": "steps_heading", "label": "How it works heading", "default": "How it works" },
+    { "type": "text", "id": "reqs_heading", "label": "Requirements heading", "default": "Who we're looking for" },
+    { "type": "textarea", "id": "reqs_note", "label": "Requirements note", "default": "We read every application by hand. A smaller, engaged audience that genuinely fits SASSi beats a big one that doesn't." },
+    { "type": "text", "id": "channels_heading", "label": "Channels heading", "default": "Where you can earn" },
+    { "type": "text", "id": "faq_heading", "label": "FAQ heading", "default": "Questions" }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Step",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Title", "default": "Apply" },
+        { "type": "textarea", "id": "copy", "label": "Copy", "default": "Tell us who you are and where you post." }
+      ]
+    },
+    {
+      "type": "requirement",
+      "name": "Requirement",
+      "settings": [
+        { "type": "textarea", "id": "text", "label": "Requirement", "default": "At least 1,000 followers on your main platform." }
+      ]
+    },
+    {
+      "type": "channel",
+      "name": "Channel",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Name", "default": "sassirabbit.com" },
+        { "type": "textarea", "id": "note", "label": "Note", "default": "Your personal code works on our site." }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "FAQ row",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "When do I get paid?" },
+        { "type": "richtext", "id": "answer", "label": "Answer", "default": "<p>Monthly, by GCash or bank transfer.</p>" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Affiliate page" }]
+}
+{% endschema %}

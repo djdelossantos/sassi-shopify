@@ -3,33 +3,163 @@
     "intro": {
       "type": "intro",
       "blocks": {
-        "slide-1": { "type": "slide", "settings": {} }
+        "slide-1": {
+          "type": "slide",
+          "settings": {}
+        }
       },
-      "block_order": ["slide-1"],
-      "settings": {}
+      "block_order": [
+        "slide-1"
+      ],
+      "settings": {
+        "headline": "Carry On",
+        "headline_accent": "",
+        "hero_video": "shopify://files/videos/Sassi-Website-Hero-Video.webm",
+        "brand_heading": "A reliable product for the people",
+        "brand_heading_accent": "we rely on.",
+        "brand_body": "Bags for the shift, the commute, and everything you haul in between. No fuss, no flex, gear that shows up every day, the way you do.",
+        "brand_button_label": "Learn More",
+        "brand_button_link": ""
+      }
     },
     "categories": {
       "type": "categories",
-      "settings": {}
+      "blocks": {
+        "backpacks": {
+          "type": "category",
+          "settings": {
+            "title": "Backpacks",
+            "copy": "Built for the daily grind. Protective and weather-ready.",
+            "link": "backpacks",
+            "image": "shopify://shop_images/Backpacks-category_img_2x_b7e68d33-b2bc-4378-b31e-a9d5b87226e2.png"
+          }
+        },
+        "totes": {
+          "type": "category",
+          "settings": {
+            "title": "Totes",
+            "copy": "Everyday utility, simplified. Spacious storage for your routine.",
+            "link": "tote",
+            "image": "shopify://shop_images/Totes-category_img_2x_9bc0fa83-2a2a-4992-bba1-85ffc029feee.png"
+          }
+        },
+        "handbags": {
+          "type": "category",
+          "settings": {
+            "title": "Handbags",
+            "copy": "Compact and organized. Quick-access pockets for daily essentials.",
+            "link": "handbags",
+            "image": "shopify://shop_images/Handbags-category_img_2x_ca8cc037-5579-4cb2-b0a6-88f32f2c5507.png"
+          }
+        }
+      },
+      "block_order": [
+        "backpacks",
+        "totes",
+        "handbags"
+      ],
+      "settings": {
+        "show_buttons": false
+      }
     },
     "lifestyle": {
       "type": "lifestyle-grid",
+      "blocks": {
+        "work": {
+          "type": "tile",
+          "settings": {
+            "title": "Work",
+            "copy": "Streamlined style for the daily grind.\nKeeps your work essentials perfectly arranged.",
+            "image": "shopify://shop_images/Work-series_img_2x_c5972368-0889-4c4b-9188-b9a65b88f424.png"
+          }
+        },
+        "tech": {
+          "type": "tile",
+          "settings": {
+            "title": "Tech",
+            "copy": "Secure padding for your mobile office.\nGuards laptops and cables from bumps."
+          }
+        },
+        "active": {
+          "type": "tile",
+          "settings": {
+            "title": "Active",
+            "copy": "Lightweight resilience for life in motion.\nTransitions easily from workouts to city streets."
+          }
+        },
+        "utility": {
+          "type": "tile",
+          "settings": {
+            "title": "Utility",
+            "copy": "Heavy-duty storage that works harder.\nReinforced details handle your toughest loads."
+          }
+        },
+        "travel": {
+          "type": "tile",
+          "settings": {
+            "title": "Travel",
+            "copy": "Travel-ready design for smooth transit.\nIncludes intuitive layouts for hassle-free miles."
+          }
+        },
+        "lifestyle": {
+          "type": "tile",
+          "settings": {
+            "title": "Lifestyle",
+            "copy": "Effortless versatility for your daily routine.\nAdapts to your changing schedule instantly.",
+            "image": "shopify://shop_images/Lifestyle-series_img_2x_ba3e395d-a9ec-4c7e-8a26-bfc3ad9abbb5.png"
+          }
+        }
+      },
+      "block_order": [
+        "work",
+        "tech",
+        "active",
+        "utility",
+        "travel",
+        "lifestyle"
+      ],
       "settings": {}
     },
     "black-series": {
       "type": "black-series",
-      "settings": {}
+      "settings": {
+        "heading": "Black Series",
+        "sub": "Blacked out. Built up.",
+        "button_label": "Learn More",
+        "button_link": ""
+      }
     },
     "affiliate": {
       "type": "affiliate",
-      "settings": {}
+      "settings": {
+        "eyebrow": "Affiliate Program",
+        "heading_line1": "Love SASSi?",
+        "heading_line2": "Get paid to",
+        "heading_accent": "share it.",
+        "sub_line1": "Partner with SASSi and represent the bags you already carry.",
+        "sub_line2": "Earn on every referral as an affiliate.",
+        "button_label": "Become an Affiliate",
+        "button_link": ""
+      }
     },
     "featured": {
       "type": "featured-collection",
       "settings": {
-        "collection": "new-arrivals"
+        "heading": "New Arrivals",
+        "collection": "new-arrivals",
+        "limit": 4,
+        "anchor": "new-arrivals",
+        "link_label": "Shop now →",
+        "link_url": ""
       }
     }
   },
-  "order": ["intro", "categories", "lifestyle", "black-series", "affiliate", "featured"]
+  "order": [
+    "intro",
+    "categories",
+    "lifestyle",
+    "black-series",
+    "affiliate",
+    "featured"
+  ]
 }

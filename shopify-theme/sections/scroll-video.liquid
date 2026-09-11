@@ -1,0 +1,164 @@
+{%- comment -%}
+  Scroll-scrubbed video — the clip is exported as a numbered image sequence and
+  painted to a <canvas>, with scroll position mapped to frame index. No <video>,
+  so there is no decoder seeking and the scrub is frame-accurate both ways.
+
+  The section is N x 100vh tall. The canvas pin is position:sticky so it holds
+  for the whole run, and the copy panels are absolutely positioned over it — one
+  per 100vh — so a single background carries several sections of content.
+
+  Shopify note: assets/ is flat and asset_url returns CDN paths with version
+  hashes, so JS cannot build "frame-001.webp" by index the way the Eleventy
+  prototype does. Liquid emits the resolved URL list as JSON instead.
+
+  Frames are named <prefix>-001.webp (desktop) and <prefix>-m-001.webp (mobile).
+{%- endcomment -%}
+{%- liquid
+  assign panels = section.blocks.size
+  if panels == 0
+    assign panels = 1
+  endif
+  assign prefix = section.settings.frame_prefix | default: 'travel-hero'
+  assign count = section.settings.frame_count
+  assign count_mobile = section.settings.frame_count_mobile
+-%}
+
+{%- capture frame_urls -%}
+[
+{%- for i in (1..count) -%}
+  {%- assign n = i | prepend: '00' | slice: -3, 3 -%}
+  {{ prefix | append: '-' | append: n | append: '.webp' | asset_url | json }}
+  {%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]
+{%- endcapture -%}
+
+{%- capture frame_urls_mobile -%}
+[
+{%- for i in (1..count_mobile) -%}
+  {%- assign n = i | prepend: '00' | slice: -3, 3 -%}
+  {{ prefix | append: '-m-' | append: n | append: '.webp' | asset_url | json }}
+  {%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]
+{%- endcapture -%}
+
+<section class="scroll-video"
+         data-section="scroll-video"
+         data-section-theme="dark"
+         data-scroll-video
+         data-frame-align="{{ section.settings.align }}"
+         data-frame-pan="{{ section.settings.pan }}"
+         data-frame-zoom="{{ section.settings.zoom }}"
+         data-frame-zoom-mobile="{{ section.settings.zoom_mobile }}"
+         style="--panels: {{ panels }}"
+         {{ section.shopify_attributes }}>
+  <script type="application/json" data-scroll-video-frames>{{ frame_urls }}</script>
+  <script type="application/json" data-scroll-video-frames-mobile>{{ frame_urls_mobile }}</script>
+
+  <div class="scroll-video__pin">
+    <canvas class="scroll-video__canvas" data-scroll-video-canvas aria-hidden="true"></canvas>
+    <noscript>
+      <img class="scroll-video__poster" src="{{ prefix | append: '-001.webp' | asset_url }}" alt="">
+    </noscript>
+    <div class="scroll-video__dim" style="--dim: {{ section.settings.dim_pct | divided_by: 100.0 }}"></div>
+    <div class="scroll-video__noise" style="--noise: {{ section.settings.noise_pct | divided_by: 100.0 }}"></div>
+    <div class="scroll-video__loading" data-scroll-video-loading>
+      <span class="scroll-video__loading-bar"><i data-scroll-video-progress></i></span>
+    </div>
+  </div>
+
+  {%- comment -%} One 100vh panel per block, riding over the pinned background. {%- endcomment -%}
+  <div class="scroll-video__panels{% if section.settings.text_align == 'left' %} scroll-video__panels--left{% endif %}">
+    {%- for block in section.blocks -%}
+      <div class="scroll-video__panel" {{ block.shopify_attributes }}>
+        <div class="scroll-video__overlay">
+          {%- if block.settings.eyebrow != blank -%}
+            <p class="scroll-video__eyebrow">{{ block.settings.eyebrow }}</p>
+          {%- endif -%}
+          {%- if block.settings.heading != blank -%}
+            <h2 class="scroll-video__heading{% if block.settings.tone == 'brand' %} text-brand{% endif %}">{{ block.settings.heading }}</h2>
+          {%- endif -%}
+          {%- if block.settings.copy != blank -%}
+            <p class="scroll-video__copy">{{ block.settings.copy }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Scroll video",
+  "settings": [
+    { "type": "header", "content": "Frames" },
+    {
+      "type": "text", "id": "frame_prefix", "label": "Frame filename prefix", "default": "travel-hero",
+      "info": "Frames must be uploaded to theme assets as prefix-001.webp … and prefix-m-001.webp … for mobile."
+    },
+    { "type": "range", "id": "frame_count", "label": "Desktop frames", "min": 20, "max": 300, "step": 10, "default": 200 },
+    { "type": "range", "id": "frame_count_mobile", "label": "Mobile frames", "min": 20, "max": 300, "step": 10, "default": 100 },
+    { "type": "header", "content": "Framing" },
+    {
+      "type": "select", "id": "align", "label": "Vertical anchor", "default": "top",
+      "info": "Where the crop sits when the frame is taller than the viewport. Top keeps headroom above the subject.",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Centre" },
+        { "value": "bottom", "label": "Bottom" }
+      ]
+    },
+    {
+      "type": "checkbox", "id": "pan", "label": "Pan down the frame as you scroll", "default": false,
+      "info": "Leave off when the pan is already baked into the frames."
+    },
+    { "type": "range", "id": "zoom", "label": "Desktop zoom", "min": 1, "max": 2, "step": 0.1, "default": 1 },
+    { "type": "range", "id": "zoom_mobile", "label": "Mobile zoom", "min": 1, "max": 2, "step": 0.1, "default": 1.2 },
+    { "type": "header", "content": "Overlay" },
+    {
+      "type": "range", "id": "dim_pct", "label": "Dim", "unit": "%",
+      "min": 0, "max": 80, "step": 5, "default": 30,
+      "info": "Darkens the footage behind the copy."
+    },
+    {
+      "type": "range", "id": "noise_pct", "label": "Grain", "unit": "%",
+      "min": 0, "max": 30, "step": 1, "default": 6,
+      "info": "Film grain over the footage. Shopify range steps must be multiples of 0.1, so these are percentages divided down in Liquid."
+    },
+    { "type": "header", "content": "Copy" },
+    {
+      "type": "select", "id": "text_align", "label": "Text alignment", "default": "left",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Centre" }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "type": "panel",
+      "name": "Panel",
+      "settings": [
+        { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+        { "type": "textarea", "id": "heading", "label": "Heading" },
+        { "type": "textarea", "id": "copy", "label": "Body copy" },
+        {
+          "type": "select", "id": "tone", "label": "Heading colour", "default": "light",
+          "options": [
+            { "value": "light", "label": "White" },
+            { "value": "brand", "label": "SASSi red" }
+          ]
+        }
+      ]
+    }
+  ],
+  "max_blocks": 5,
+  "presets": [
+    {
+      "name": "Scroll video",
+      "blocks": [{ "type": "panel" }, { "type": "panel" }, { "type": "panel" }]
+    }
+  ]
+}
+{% endschema %}

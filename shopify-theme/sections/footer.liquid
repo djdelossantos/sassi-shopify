@@ -8,7 +8,7 @@
         {%- if form.posted_successfully? -%}
           <p class="site-footer__form-success">Thanks — you’re on the list.</p>
         {%- else -%}
-          <input class="site-footer__input" type="email" name="contact[email]" placeholder="{{ section.settings.join_placeholder }}" aria-label="{{ section.settings.join_placeholder }}" required>
+          <input class="field" type="email" name="contact[email]" placeholder="{{ section.settings.join_placeholder }}" aria-label="{{ section.settings.join_placeholder }}" required>
           <button type="submit" class="btn btn--light">
             <span class="btn__label">{{ section.settings.join_button }}</span>
             <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
@@ -37,7 +37,11 @@
             <h3>{{ block.settings.heading }}</h3>
             <ul>
               {%- for link in col_menu.links -%}
-                <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+                {%- if link.url contains '://' -%}
+                  <li><a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.title }}</a></li>
+                {%- else -%}
+                  <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+                {%- endif -%}
               {%- endfor -%}
             </ul>
           </div>

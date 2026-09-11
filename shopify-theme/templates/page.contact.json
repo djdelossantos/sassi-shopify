@@ -1,0 +1,48 @@
+{
+  "sections": {
+    "contact": {
+      "type": "contact",
+      "blocks": {
+        "social-facebook": {
+          "type": "social",
+          "settings": {
+            "icon": "facebook",
+            "label": "Facebook",
+            "handle": "@sassirabbit",
+            "url": "https://www.facebook.com/sassirabbit"
+          }
+        },
+        "social-instagram": {
+          "type": "social",
+          "settings": {
+            "icon": "instagram",
+            "label": "Instagram",
+            "handle": "@sassi.rabbit",
+            "url": "https://www.instagram.com/sassi.rabbit/"
+          }
+        },
+        "social-tiktok": {
+          "type": "social",
+          "settings": {
+            "icon": "tiktok",
+            "label": "TikTok",
+            "handle": "@sassirabbit",
+            "url": "https://www.tiktok.com/@sassirabbit"
+          }
+        }
+      },
+      "block_order": ["social-facebook", "social-instagram", "social-tiktok"],
+      "settings": {
+        "heading": "How can we help you",
+        "heading_accent": "carry on?",
+        "sub": "Real people, real answers. Reach us however suits you — we read every message.",
+        "form_heading": "Send us a message",
+        "form_note": "Tell us a bit about what you need — we'll get back to you soon.",
+        "submit_label": "Send message",
+        "success_message": "Thanks — your message is in. We'll get back to you soon.",
+        "error_message": "Please check the highlighted fields and try again."
+      }
+    }
+  },
+  "order": ["contact"]
+}

@@ -3,10 +3,24 @@
   <div class="categories__track">
     {%- if section.blocks.size > 0 -%}
       {%- for block in section.blocks -%}
+        {%- comment -%} Until a merchant uploads an image for a card, fall back to the
+          original bundled art so the homepage looks unchanged. Whitelisted by title so
+          we never point <img> at an asset that doesn't exist (a renamed card just gets
+          the generic placeholder instead of a broken image). {%- endcomment -%}
+        {%- liquid
+          assign bundled = 'backpacks,totes,handbags' | split: ','
+          assign key = block.settings.title | downcase | strip
+          assign fallback_asset = ''
+          if bundled contains key
+            assign fallback_asset = 'cat-' | append: key | append: '-2x.png'
+          endif
+        -%}
         <article class="category-card" {{ block.shopify_attributes }}>
           <div class="category-card__image" data-section-theme="dark">
             {%- if block.settings.image != blank -%}
               <img src="{{ block.settings.image | image_url: width: 920 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+            {%- elsif fallback_asset != blank -%}
+              <img src="{{ fallback_asset | asset_url }}" alt="{{ block.settings.title | escape }}" loading="lazy">
             {%- else -%}
               {{ 'collection-1' | placeholder_svg_tag: 'category-card__placeholder' }}
             {%- endif -%}

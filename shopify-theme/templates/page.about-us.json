@@ -1,0 +1,51 @@
+{
+  "sections": {
+    "scroll-video": {
+      "type": "scroll-video",
+      "blocks": {
+        "panel-1": {
+          "type": "panel",
+          "settings": {
+            "eyebrow": "SASSi was built on a simple idea:",
+            "heading": "That products should be purposeful, premium, and easy to get.",
+            "tone": "light"
+          }
+        },
+        "panel-2": {
+          "type": "panel",
+          "settings": {
+            "heading": "We make reliable carry for the people we rely on.",
+            "tone": "brand"
+          }
+        },
+        "panel-3": {
+          "type": "panel",
+          "settings": {
+            "heading": "Designing every SASSi product to perfectly support your daily life.",
+            "tone": "light"
+          }
+        }
+      },
+      "block_order": ["panel-1", "panel-2", "panel-3"],
+      "settings": {
+        "frame_prefix": "travel-hero",
+        "frame_count": 200,
+        "frame_count_mobile": 100,
+        "align": "top",
+        "pan": false,
+        "zoom": 1,
+        "zoom_mobile": 1.2,
+        "dim_pct": 30,
+        "noise_pct": 6,
+        "text_align": "left"
+      }
+    },
+    "featured": {
+      "type": "featured-collection",
+      "settings": {
+        "collection": "new-arrivals"
+      }
+    }
+  },
+  "order": ["scroll-video", "featured"]
+}

@@ -740,6 +740,241 @@
     hold();
   }
 
+  // The description accordion ships server-rendered open (correct default for
+  // mobile, and for JS-disabled/reduced-motion visitors). On desktop it should
+  // start closed instead — set as a plain attribute flip (not motionOn-gated:
+  // this is an initial state, not an animation) before initAccordions binds
+  // its click handlers, so their `details.open` reads match reality.
+  function initPdpDescriptionDefault() {
+    var d = document.querySelector('[data-default-open="mobile"]');
+    if (d && window.matchMedia("(min-width: 900px)").matches) {
+      d.open = false;
+      d.classList.remove("is-open");
+    }
+  }
+
+  // PDP back link: prefers history.back() (returns to the exact category/search
+  // page the customer came from, at their prior scroll position) over the
+  // static href fallback baked into the link's markup (the product's
+  // collection, or Shop All). Two signals decide which:
+  //  - sessionStorage "sassiNav" — set by the client router on every internal
+  //    soft-navigation (see swapContent); covers the common case where the
+  //    customer clicked here through the site.
+  //  - document.referrer same-origin — covers a hard page load (motion/router
+  //    disabled, or this is the very first load in the tab) where the router
+  //    never got a chance to set the flag, but the browser's own referrer
+  //    still proves an in-app previous page exists.
+  // Contact form success banner: dismissible via its X button, since the form
+  // now stays visible after a successful submit (so a customer can send a
+  // second message) rather than being replaced by the banner.
+  function initContactSuccess() {
+    var success = document.querySelector(".contact__success[data-dismissible]");
+    var closeBtn = success && success.querySelector("[data-dismiss]");
+    if (!closeBtn) { return; }
+    closeBtn.addEventListener("click", function () {
+      if (motionOn) {
+        gsap.to(success, {
+          opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, duration: 0.3, ease: "power2.inOut",
+          onComplete: function () { success.remove(); }
+        });
+      } else {
+        success.remove();
+      }
+    });
+  }
+
+  // "Last updated: ..." is a body-copy convention, not a structured field —
+  // neither Shopify's policy pages nor a regular page expose one. So: if the
+  // body's first paragraph looks like that line, lift it out (returning the
+  // text) so the caller can render it in the intro's subtext slot instead of
+  // leaving it as the first line of the prose. Returns "" when there is none.
+  function takeLastUpdated(rte) {
+    var firstP = rte && rte.querySelector("p");
+    if (!firstP || !/^last updated/i.test(firstP.textContent.trim())) { return ""; }
+    var text = firstP.textContent.trim();
+    firstP.remove(); // don't show it twice
+    return text;
+  }
+
+  // Regular content pages (Shipping & Returns, FAQ, …). Unlike policy pages,
+  // main-page.liquid already renders the intro band and heading server-side —
+  // all that's left is moving a leading "Last updated: ..." line into it, so
+  // the two page types match. No-ops on pages without that line.
+  function initPageIntro() {
+    var inner = document.querySelector(".page [data-content-intro]");
+    if (!inner || inner.dataset.introDone) { return; }
+    inner.dataset.introDone = "1";
+
+    var updated = takeLastUpdated(document.querySelector(".page__content"));
+    if (!updated) { return; }
+    var sub = document.createElement("p");
+    sub.className = "contact__sub";
+    sub.textContent = updated;
+    inner.appendChild(sub);
+  }
+
+  /* ============ Shopify Forms — match the theme's form styling ============
+     The Forms app renders its fields inside a shadow root on <shopify-forms-embed>,
+     which is why plain theme CSS can't reach them (every "you can't style Shopify
+     Forms" thread stops here). The root is mode:"open" though, so JS *can* inject a
+     stylesheet into it.
+
+     Selectors deliberately target element types, never the app's own class names —
+     those carry a build hash (e.g. _formInputField_nag3b_7) that changes whenever
+     Shopify ships an update, so class-based rules would silently stop applying.
+
+     Values mirror .contact__field / .btn--dark so this form reads as the same
+     component as the Contact form. Everything is wrapped so that if Shopify ever
+     switches the root to mode:"closed", the form simply keeps its default styling
+     instead of throwing. */
+  function initShopifyFormsStyle() {
+    // Only bother on pages that actually host a form embed.
+    if (!document.querySelector(".affiliate-apply__slot, shopify-forms-embed, #app-embed")) { return; }
+
+    var STYLE_ID = "sassi-forms-style";
+    var css = [
+      /* inherit the brand face; @font-face from the host document reaches shadow DOM */
+      ':host, :host * { font-family: "Open Sauce Two", "Inter", system-ui, sans-serif !important; }',
+      /* left-align to match the Contact form, and let fields use the full column.
+         The app centres its grid in a ~454px column inside our 760px section;
+         partial class matching ([class*=]) targets the semantic half of the
+         hashed class names, which survives app updates. */
+      ':host { text-align: left !important; }',
+      'form, fieldset, [class*="gridItem"], [class*="formFieldset"], [class*="formFieldContainer"] {',
+      '  width: 100% !important; max-width: none !important;',
+      /* border-box for the same reason as the submit button: these lay out in
+         content-box, so width:100% would add their padding on top and push the
+         field 2px past its wrapper, clipping the right-hand border. */
+      '  box-sizing: border-box !important;',
+      '}',
+      /* the app caps its form container at 450px; lift it so the fields fill our
+         section the way the Contact form fills its column */
+      '[class*="formContainer"] { max-width: 100% !important; }',
+      /* Match the Contact form's solid 1px #757575 border. The app paints this as
+         a soft box-shadow ring, so replace the ring rather than adding a border.
+         :not([aria-invalid="true"]) leaves the app's red error ring intact, and the
+         :focus rule keeps a visible (darker, thicker) focus indicator. */
+      'input:not([aria-invalid="true"]), textarea:not([aria-invalid="true"]), select:not([aria-invalid="true"]) {',
+      '  box-shadow: 0 0 0 1px #757575 !important;',
+      '}',
+      'input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 2px #12100e !important; }',
+      /* Square the corners and set the type size — nothing else.
+         Critically: do NOT touch box-shadow or outline. The app draws each field's
+         visible outline with box-shadow rather than border, so `box-shadow: none`
+         erases the field boxes entirely; and overriding `outline` would strip the
+         keyboard focus ring. border-radius still squares a box-shadow edge. */
+      'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select {',
+      '  border-radius: 0 !important;',
+      '  font-size: 16px !important;',
+      '}',
+      /* NOTE: no blanket label rule. These are floating labels sitting *over* the
+         input (see aria-labelledby); bolding/darkening them makes an empty field
+         read as pre-filled. Leave their colour and weight to the app. */
+      /* file drop zone: keep the dashed affordance, drop the rounding */
+      '[class*="fileUpload"], [class*="dropzone"], [class*="DropZone"] { border-radius: 0 !important; }',
+      /* submit: full-width obsidian block, as .btn--dark */
+      'button[type="submit"] {',
+      '  border-radius: 0 !important;',
+      '  background: #12100e !important;',
+      '  color: #ffffff !important;',
+      '  font-size: 16px !important; font-weight: 700 !important; letter-spacing: 0.02em !important;',
+      '  height: 48px !important; width: 100% !important;',
+      /* border-box is essential here: the app lays out in content-box, so a
+         width:100% button would add its own 15px side padding on top and spill
+         past the viewport on mobile (and overshoot the 48px height). Scoped to
+         this button only — flipping box-sizing app-wide would break their math. */
+      '  box-sizing: border-box !important;',
+      '}',
+      'button[type="submit"]:hover { opacity: 0.88 !important; }',
+      /* the phone-country control and any other pill-shaped chrome */
+      'button:not([type="submit"]) { border-radius: 0 !important; }'
+    ].join("\n");
+
+    var applied = false;
+    function applyTo(host) {
+      try {
+        var root = host && host.shadowRoot;
+        if (!root) { return false; }
+        if (root.querySelector("#" + STYLE_ID)) { return true; } // already styled
+        var s = document.createElement("style");
+        s.id = STYLE_ID;
+        s.textContent = css;
+        root.appendChild(s);
+        return true;
+      } catch (e) { return false; }
+    }
+    function sweep() {
+      var hosts = document.querySelectorAll("shopify-forms-embed, #app-embed");
+      for (var i = 0; i < hosts.length; i++) { if (applyTo(hosts[i])) { applied = true; } }
+      return applied;
+    }
+
+    if (sweep()) { return; }
+    // The embed hydrates asynchronously — poll briefly rather than racing it.
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (sweep() || tries > 40) { clearInterval(iv); } // ~20s ceiling
+    }, 500);
+  }
+
+  // Policy pages (Privacy Policy, Terms of Service, etc.): Shopify overrides
+  // content_for_layout with its own fixed .shopify-policy__container markup
+  // regardless of what templates/policy.liquid contains — confirmed by testing
+  // that even static text placed there never renders. There is no Liquid-level
+  // way to add an intro band here, so this reorganizes the already-rendered DOM
+  // instead: promotes Shopify's own title, plus a "Last updated: ..." first
+  // paragraph if the policy body has one, into a .contact__intro-styled band —
+  // the same "content page intro" treatment as the Contact page, reused as the
+  // standard for this whole page type. Degrades gracefully with JS off: the
+  // original title/body just show in Shopify's plain default layout.
+  function initPolicyIntro() {
+    var container = document.querySelector(".shopify-policy__container");
+    if (!container || container.dataset.introDone) { return; }
+    container.dataset.introDone = "1";
+
+    var titleEl = container.querySelector(".shopify-policy__title h1");
+    var title = titleEl ? titleEl.textContent.trim() : "";
+    if (!title) { return; }
+
+    var updated = takeLastUpdated(container.querySelector(".shopify-policy__body .rte"));
+
+    var intro = document.createElement("div");
+    intro.className = "contact__intro";
+    intro.setAttribute("data-section-theme", "light");
+    intro.innerHTML =
+      '<span class="noise" aria-hidden="true"></span>' +
+      '<div class="contact__intro-inner" data-policy-intro>' +
+        '<h1 class="contact__heading"></h1>' +
+        (updated ? '<p class="contact__sub"></p>' : "") +
+      "</div>";
+    intro.querySelector(".contact__heading").textContent = title;
+    if (updated) { intro.querySelector(".contact__sub").textContent = updated; }
+
+    container.parentNode.insertBefore(intro, container);
+    var origTitle = container.querySelector(".shopify-policy__title");
+    if (origTitle) { origTitle.style.display = "none"; }
+  }
+
+  // Re-bound on every initFeatures() run (first load and after each PDP swap),
+  // so a fresh listener always matches the current page's back link.
+  function initPdpBack() {
+    var back = document.querySelector("[data-pdp-back]");
+    if (!back) { return; }
+    var navigatedInternally = false;
+    try { navigatedInternally = sessionStorage.getItem("sassiNav") === "1"; } catch (e) {}
+    var ref = document.referrer;
+    var refSameOrigin = !!ref && ref.indexOf(window.location.origin) === 0;
+    if ((navigatedInternally || refSameOrigin) && window.history.length > 1) {
+      back.addEventListener("click", function (e) {
+        e.preventDefault();
+        window.history.back();
+      });
+    }
+    // Else: leave the element alone — its href already points to a sensible
+    // fallback (the product's collection, or Shop All).
+  }
+
   // PDP accordions — smooth GSAP height + fade on expand/collapse, with the icon
   // rotating in sync. Native <details> stays the fallback when motion is off.
   // Single-open (accordion group): opening one collapses any open sibling, so the
@@ -1022,16 +1257,259 @@
     });
   }
 
+  /* ---------------------- Scroll-scrubbed video ----------------------
+     Apple's technique: the clip is an image sequence painted to a canvas, with
+     scroll position mapped to frame index. No <video>, so no decoder seeking —
+     scrubbing is frame-accurate forwards and backwards.
+
+     The section is tall and its inner pin is position:sticky (rather than a GSAP
+     pin) so the layout stays honest under Lenis; ScrollTrigger only reports
+     progress. */
+  function initScrollVideo() {
+    var section = document.querySelector("[data-scroll-video]");
+    if (!section || section.hasAttribute("data-sv-bound")) { return; }
+    section.setAttribute("data-sv-bound", "");
+
+    var canvas = section.querySelector("[data-scroll-video-canvas]");
+    if (!canvas) { return; }
+    var ctx = canvas.getContext("2d", { alpha: false });
+    // Pick the art-directed set before anything loads, so a phone never fetches
+    // the desktop frames. Chosen once — a mid-session rotation keeps the set it
+    // started with rather than re-downloading a hundred images.
+    // Shopify assets/ is flat and asset_url returns hashed CDN paths, so the
+    // frame URLs are emitted by Liquid as JSON rather than built by index.
+    var readList = function (sel) {
+      var el = section.querySelector(sel);
+      if (!el) { return []; }
+      try { return JSON.parse(el.textContent) || []; } catch (e) { return []; }
+    };
+    var framesDesktop = readList("[data-scroll-video-frames]");
+    var framesMobile = readList("[data-scroll-video-frames-mobile]");
+    var useMobile = framesMobile.length && window.matchMedia("(max-width: 899px)").matches;
+    var urls = useMobile ? framesMobile : framesDesktop;
+    var count = urls.length;
+    var pad = parseInt(section.getAttribute("data-frame-pad"), 10) || 3;
+    var ext = section.getAttribute("data-frame-ext") || "webp";
+    if (!count) { return; }
+
+    var loadingEl = section.querySelector("[data-scroll-video-loading]");
+    var progressEl = section.querySelector("[data-scroll-video-progress]");
+
+    var frames = new Array(count);
+    var ready = new Array(count);
+    var loaded = 0;
+    var currentIndex = -1;
+
+    var srcFor = function (i) { return urls[i]; };
+
+    // Nearest already-decoded frame, so an un-preloaded index shows the closest
+    // real frame instead of blanking the canvas.
+    var nearestReady = function (i) {
+      if (ready[i]) { return i; }
+      for (var d = 1; d < count; d++) {
+        if (i - d >= 0 && ready[i - d]) { return i - d; }
+        if (i + d < count && ready[i + d]) { return i + d; }
+      }
+      return -1;
+    };
+
+    var align = section.getAttribute("data-frame-align") || "top";
+    var pan = section.getAttribute("data-frame-pan") !== "false";
+    // Punch-in, per breakpoint. 1 = plain cover.
+    var zoom = parseFloat(
+      useMobile ? (section.getAttribute("data-frame-zoom-mobile") || "1")
+                : (section.getAttribute("data-frame-zoom") || "1")) || 1;
+    var frameW = 0; // native source width, learned from the first decoded frame
+
+    var sizeCanvas = function () {
+      var w = canvas.clientWidth || section.clientWidth;
+      var h = canvas.clientHeight || window.innerHeight;
+      // The frames are already being upscaled to fill the viewport width, so a
+      // 2x backing store would only magnify that upscale — it cannot invent
+      // detail the source does not have, and costs 4x the memory per frame.
+      // Cap the backing store at the source width; the browser's own scaling of
+      // the canvas element up to CSS size is smoother than drawImage's.
+      var dpr = window.devicePixelRatio || 1;
+      var maxW = frameW ? Math.max(frameW, w) : w * Math.min(dpr, 2);
+      var scale = Math.min(dpr, maxW / Math.max(w, 1), 2);
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      ctx.imageSmoothingEnabled = true;
+      // "high" runs an expensive resampler on every paint. While scrubbing that
+      // cost lands on each scroll frame, and it cannot recover detail the 720px
+      // source never had — so the quality gain is invisible and the jank is not.
+      ctx.imageSmoothingQuality = "low";
+    };
+
+    // Scroll drives two things at once from a single progress value:
+    //   1. which frame plays (scrubbing), and
+    //   2. how far down the frame we are looking (panning).
+    // The frame fills the viewport width, so a portrait source overflows
+    // vertically — that overflow IS the pan distance. Section one sees the top
+    // of the composition, section three the bottom, which is what makes a pinned
+    // canvas read as a background travelling with the page.
+    var lastProgress = 0;
+
+    var draw = function (i, progress) {
+      var idx = nearestReady(i);
+      if (idx === -1) { return; }
+      if (typeof progress === "number") { lastProgress = progress; }
+      var img = frames[idx];
+      var cw = canvas.width, ch = canvas.height;
+      if (!cw || !ch) { return; }
+      var nw = img.naturalWidth, nh = img.naturalHeight;
+
+      // Draw only the slice of the source that is on screen — drawing the whole
+      // frame and letting the canvas clip wastes most of the scaling work.
+      //
+      // Cover means cropping whichever axis overflows. Fitting to width alone
+      // and clamping the slice height stretched the image whenever the frame
+      // was shorter than the viewport needed (portrait phones, landscape
+      // frames), because a short source got drawn into a tall canvas.
+      var targetAspect = cw / ch;
+      var srcAspect = nw / nh;
+      var sw, sh;
+
+      if (srcAspect > targetAspect) {
+        sw = nh * targetAspect; sh = nh;   // source wider → crop the sides
+      } else {
+        sw = nw; sh = nw / targetAspect;   // source taller → crop top/bottom
+      }
+
+      // Zoom shrinks the sampled rectangle, so less of the frame fills the same
+      // canvas — a punch-in. Clamped so it can never sample outside the image.
+      if (zoom > 1) {
+        sw = Math.min(nw, sw / zoom);
+        sh = Math.min(nh, sh / zoom);
+      }
+
+      var sx = (nw - sw) / 2;              // always centred horizontally
+      var maxSy = Math.max(0, nh - sh);    // vertical slack is what the pan uses
+      var sy;
+      if (pan && maxSy > 0) { sy = maxSy * lastProgress; }
+      else if (align === "bottom") { sy = maxSy; }
+      else if (align === "center") { sy = maxSy / 2; }
+      else { sy = 0; }
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+      currentIndex = idx;
+    };
+
+    // ScrollTrigger can fire several updates per animation frame under Lenis;
+    // painting on each one is wasted work. Coalesce to one draw per frame.
+    var pendingIndex = -1;
+    var pendingProgress = 0;
+    var rafId = 0;
+    var scheduleDraw = function (i, progress) {
+      pendingIndex = i;
+      pendingProgress = progress;
+      if (rafId) { return; }
+      rafId = requestAnimationFrame(function () {
+        rafId = 0;
+        draw(pendingIndex, pendingProgress);
+      });
+    };
+
+    var setProgressBar = function () {
+      if (progressEl) { progressEl.style.width = Math.round((loaded / count) * 100) + "%"; }
+      if (loaded >= count && loadingEl) { loadingEl.hidden = true; }
+    };
+
+    // Load order matters more than load speed. Fetching 1→N strictly in order
+    // means scrolling before the tail arrives snaps between distant frames —
+    // which reads as glitching until everything settles. Instead do coarse
+    // passes: every 16th frame, then every 8th, 4th, 2nd, then the rest. The
+    // whole scroll range is covered almost immediately at low temporal
+    // resolution (nearestReady fills the gaps) and sharpens as passes complete.
+    var order = (function () {
+      var seen = new Array(count);
+      var list = [];
+      for (var stride = 16; stride >= 1; stride = stride >> 1) {
+        for (var i = 0; i < count; i += stride) {
+          if (!seen[i]) { seen[i] = true; list.push(i); }
+        }
+      }
+      return list;
+    })();
+
+    var next = 0;
+    // Browsers cap parallel requests per host (~6 on HTTP/1.1, far more on
+    // HTTP/2 — which is what Shopify's CDN serves).
+    var CONCURRENCY = 8;
+    var pump = function () {
+      while (next < order.length && pumpActive < CONCURRENCY) {
+        (function (i) {
+          pumpActive++;
+          var img = new Image();
+          img.decoding = "async";
+          // Decode up front. Without this the first paint of each frame decodes
+          // synchronously mid-scroll, which is exactly when it hurts.
+          img.onload = (function (image, done) {
+            return function () {
+              if (image.decode) { image.decode().then(done).catch(done); }
+              else { done(); }
+            };
+          })(img, function () {
+            ready[i] = true; frames[i] = img; loaded++; pumpActive--;
+            // First frame tells us the source resolution — re-size the backing
+            // store now that we know what we are actually scaling from.
+            if (!frameW) { frameW = img.naturalWidth; sizeCanvas(); }
+            setProgressBar();
+            if (currentIndex === -1 || i === currentIndex) { draw(currentIndex === -1 ? 0 : currentIndex); }
+            pump();
+          });
+          img.onerror = function () { pumpActive--; loaded++; setProgressBar(); pump(); };
+          img.src = srcFor(i);
+        })(order[next]); // frame index from the interleaved order, not the cursor
+        next++;
+      }
+    };
+    var pumpActive = 0;
+
+    sizeCanvas();
+    pump();
+
+    window.addEventListener("resize", function () {
+      sizeCanvas();
+      draw(currentIndex < 0 ? 0 : currentIndex, lastProgress);
+    });
+
+    if (!motionOn) {
+      // No scrubbing without motion — the section collapses to one viewport in
+      // CSS, so just paint the opening frame when it arrives.
+      return;
+    }
+
+    ScrollTrigger.create({
+      trigger: section,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: function (self) {
+        var i = Math.min(count - 1, Math.max(0, Math.round(self.progress * (count - 1))));
+        // Every update matters — the pan moves continuously even while the same
+        // frame shows — but scheduleDraw collapses them to one paint per frame.
+        scheduleDraw(i, self.progress);
+      }
+    });
+  }
+
   function initFeatures() {
     initQty();
     initGallery();
     initProductForm(); // Shopify variant-aware swatches (replaces the cosmetic initSwatches)
     initShop();
     initHeroCarousel();
+    initContactSuccess();
+    initPageIntro();
+    initShopifyFormsStyle();
+    initPolicyIntro();
+    initPdpBack();
+    initPdpDescriptionDefault();
     initAccordions();
     initCartDrawer();
     initPdpScroll();
     initRecommendations();
+    initScrollVideo();
   }
 
   /* ===================== Motion layer ===================== */
@@ -1421,6 +1899,30 @@
   // First load.
   initMain();
 
+  // Theme editor: Shopify re-renders a section's markup on every settings change.
+  // Our motion layer initialised against the old DOM, and CSS hides animated
+  // content until GSAP reveals it (html.has-gsap .reveal { opacity: 0 }), so the
+  // fresh markup stayed invisible — the section looked blank after any edit.
+  // Re-init against the new DOM and fire the reveals immediately, since the
+  // preloader that normally triggers them has long since finished.
+  if (window.Shopify && window.Shopify.designMode) {
+    document.addEventListener("shopify:section:load", function () {
+      initMain();
+      firePageReveal();
+    });
+    document.addEventListener("shopify:section:unload", function () {
+      if (motionOn) { ScrollTrigger.refresh(); }
+    });
+    // Selecting a block (e.g. a hero slide) should show that block, not whatever
+    // the carousel happened to be on.
+    document.addEventListener("shopify:block:select", function (e) {
+      var slide = e.target.closest ? e.target.closest(".hero__slide") : null;
+      if (!slide) { return; }
+      var slides = slide.parentElement ? slide.parentElement.children : [];
+      [].forEach.call(slides, function (s) { s.classList.toggle("is-active", s === slide); });
+    });
+  }
+
   /* ===================== Client-side transition router ===================== */
   // Fetch the next page and swap <main> in place — the overlay/header/footer
   // never leave the document, so there is no navigation repaint (no flicker).
@@ -1481,7 +1983,15 @@
       curMain.replaceWith(newMain);
       if (doc.title) { document.title = doc.title; }
       document.body.className = doc.body.className; // per-page template class
-      if (!isPop) { history.pushState({ sassi: 1 }, "", href); }
+      if (!isPop) {
+        history.pushState({ sassi: 1 }, "", href);
+        // Marks that this tab has made at least one in-app soft-navigation, so
+        // the PDP back link (initPdpBack) knows history.back() will resolve to
+        // a real previous page rather than exiting the site. document.referrer
+        // can't tell us this on its own — it reflects the tab's original hard
+        // load and never updates across pushState navigations.
+        try { sessionStorage.setItem("sassiNav", "1"); } catch (e) {}
+      }
       currentPath = new URL(href, window.location.href).pathname;
       window.scrollTo(0, 0);
       if (lenis) { lenis.scrollTo(0, { immediate: true }); }

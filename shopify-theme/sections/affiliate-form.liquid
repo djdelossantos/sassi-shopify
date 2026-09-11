@@ -1,0 +1,58 @@
+{%- comment -%}
+  Application form slot for the affiliate page.
+
+  Kept as its own section (rather than a block inside affiliate-page) so the form
+  provider can change — Shopify Forms today, something else later — without
+  touching the pitch copy. The "@app" block type is what lets a merchant drop an
+  app block (e.g. Shopify Forms) in here from the theme editor.
+{%- endcomment -%}
+
+<section class="affiliate-apply" id="apply" data-section="affiliate-apply" data-section-theme="light">
+  <div class="affiliate-apply__inner">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="affiliate-apply__title">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+    {%- if section.settings.sub != blank -%}
+      <p class="affiliate-apply__sub">{{ section.settings.sub }}</p>
+    {%- endif -%}
+
+    <div class="affiliate-apply__slot">
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when '@app' -%}
+            {% render block %}
+        {%- endcase -%}
+      {%- endfor -%}
+
+      {%- comment -%} Editor-only hint: never shown to customers, so an unfinished
+        page degrades to just the heading rather than leaking setup instructions. {%- endcomment -%}
+      {%- if section.blocks.size == 0 and request.design_mode -%}
+        <p class="affiliate-apply__empty">
+          Add your application form here: click “Add block” in this section and choose your form app
+          (e.g. Shopify Forms).
+        </p>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.fallback_label != blank and section.settings.fallback_url != blank -%}
+      <p class="affiliate-apply__fallback">
+        <a href="{{ section.settings.fallback_url }}" target="_blank" rel="noopener noreferrer">{{ section.settings.fallback_label }}</a>
+      </p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Affiliate form",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Apply to join" },
+    { "type": "textarea", "id": "sub", "label": "Subtext", "default": "Takes a couple of minutes. We review every application by hand." },
+    { "type": "header", "content": "Fallback link" },
+    { "type": "text", "id": "fallback_label", "label": "Link label", "info": "Optional. Use if you'd rather link out to an external form than embed one above." },
+    { "type": "url", "id": "fallback_url", "label": "Link URL" }
+  ],
+  "blocks": [{ "type": "@app" }],
+  "presets": [{ "name": "Affiliate form" }]
+}
+{% endschema %}

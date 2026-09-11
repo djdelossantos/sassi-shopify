@@ -2,9 +2,23 @@
 <section class="lifestyle" data-section="lifestyle" data-section-theme="dark">
   {%- if section.blocks.size > 0 -%}
     {%- for block in section.blocks -%}
+      {%- comment -%} Until a merchant uploads an image for a tile, fall back to the
+        original bundled art so the grid looks unchanged. Whitelisted by title so we
+        never point <img> at an asset that doesn't exist (a renamed tile just gets the
+        generic placeholder instead of a broken image). {%- endcomment -%}
+      {%- liquid
+        assign bundled = 'work,tech,active,utility,travel,lifestyle' | split: ','
+        assign key = block.settings.title | downcase | strip
+        assign fallback_asset = ''
+        if bundled contains key
+          assign fallback_asset = 'life-' | append: key | append: '-2x.png'
+        endif
+      -%}
       <article class="lifestyle-tile reveal" {{ block.shopify_attributes }}>
         {%- if block.settings.image != blank -%}
           <img src="{{ block.settings.image | image_url: width: 900 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+        {%- elsif fallback_asset != blank -%}
+          <img src="{{ fallback_asset | asset_url }}" alt="{{ block.settings.title | escape }}" loading="lazy">
         {%- else -%}
           {{ 'lifestyle-1' | placeholder_svg_tag: 'lifestyle-tile__placeholder' }}
         {%- endif -%}
@@ -12,7 +26,11 @@
         <span class="noise" aria-hidden="true"></span>
         <div class="lifestyle-tile__text">
           <h3>{{ block.settings.title }}</h3>
-          <p>{{ block.settings.copy }}</p>
+          {%- comment -%} escape → newline_to_br: the design breaks this copy onto two
+            lines. A merchant can't type <br> (inline_richtext/textarea settings reject
+            raw tags), so they just press Enter and we convert it here — escaped first
+            so nothing typed into the field can inject markup. {%- endcomment -%}
+          <p>{{ block.settings.copy | escape | newline_to_br }}</p>
         </div>
       </article>
     {%- endfor -%}
@@ -43,7 +61,7 @@
       "settings": [
         { "type": "image_picker", "id": "image", "label": "Image" },
         { "type": "text", "id": "title", "label": "Title", "default": "Work" },
-        { "type": "inline_richtext", "id": "copy", "label": "Copy", "default": "Streamlined style for the daily grind." }
+        { "type": "textarea", "id": "copy", "label": "Copy", "info": "Press Enter for a line break.", "default": "Streamlined style for the daily grind.\nKeeps your work essentials perfectly arranged." }
       ]
     }
   ],

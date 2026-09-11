@@ -1,5 +1,14 @@
 {%- liquid
   assign current_variant = product.selected_or_first_available_variant
+  # Static fallback for the back link — used when there's no real in-app
+  # history to return to (see initPdpBack in theme.js, which prefers
+  # history.back() and only falls back to this href otherwise).
+  assign back_url = '/collections/all'
+  if collection != blank
+    assign back_url = collection.url
+  elsif product.collections.first != blank
+    assign back_url = product.collections.first.url
+  endif
 -%}
 <section class="pdp" data-section="pdp" data-section-theme="light">
   {%- comment -%} Gallery: desktop stacks all media past the sticky info; mobile shows
@@ -31,6 +40,16 @@
   {%- comment -%} data-lenis-prevent is applied by theme.js (initPdpScroll), not here —
     it only belongs on this column while the content actually overflows. {%- endcomment -%}
   <div class="pdp__info">
+    {%- comment -%} Returns to wherever the customer actually came from (category,
+      search, etc.) via history.back() when there's real in-app history to go to;
+      falls back to this href — the product's collection, or Shop All — otherwise.
+      Kept outside .pdp__info-content so it doesn't get swept into that column's
+      vertical-centering (see the desktop .pdp__info-content rules). {%- endcomment -%}
+    <a href="{{ back_url }}" class="pdp__back" data-pdp-back>
+      {% render 'icon', name: 'arrow-left' %}
+      <span>Back</span>
+    </a>
+    <div class="pdp__info-content">
     <h1 class="pdp__title">{{ product.title }}</h1>
     <p class="pdp__price" data-price>{{ current_variant.price | money }}</p>
 
@@ -93,7 +112,10 @@
     {%- if product.description != blank or section.blocks.size > 0 -%}
       <div class="pdp__accordions">
         {%- if product.description != blank -%}
-          <details class="accordion" open>
+          {%- comment -%} Open by default on mobile; JS closes it on desktop
+            (see initPdpDescriptionDefault in theme.js) — kept open here so
+            it's correct with JS disabled and for the mobile default. {%- endcomment -%}
+          <details class="accordion" open data-default-open="mobile">
             <summary>{{ section.settings.description_label }} {% render 'icon', name: 'plus' %}</summary>
             <div class="accordion__body rte">{{ product.description }}</div>
           </details>
@@ -112,6 +134,7 @@
         {%- endfor -%}
       </div>
     {%- endif -%}
+    </div>
   </div>
 </section>
 

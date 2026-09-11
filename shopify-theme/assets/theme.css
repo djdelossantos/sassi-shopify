@@ -68,6 +68,42 @@ h1, h2, h3, h4, p { font-weight: inherit; }
   100% { transform: translate(0, 0);        opacity: 1; }
 }
 
+/* ---- Form fields (shared) ----
+   The footer's "Join SASSi" input is the canonical field: square corners,
+   hairline border, transparent fill, 48px tall to match .btn.
+
+   The three colours are local custom properties so one rule serves both
+   backgrounds. Light is the default; any section marked data-section-theme="dark"
+   (the footer today, anything on obsidian later) flips them to the white-on-dark
+   set. Nothing per-page has to restate the field's shape. */
+:root,
+/* Restated rather than left to inherit, so a light block nested inside a dark
+   one (or vice versa) gets its own set instead of the ancestor's. */
+[data-section-theme="light"] {
+  --field-border: var(--color-border-default);
+  --field-border-focus: var(--color-text-primary);
+  --field-color: var(--color-text-primary);
+  --field-placeholder: var(--color-text-secondary);
+}
+[data-section-theme="dark"] {
+  --field-border: rgba(255, 255, 255, 0.9);
+  --field-border-focus: var(--color-white-100);
+  --field-color: var(--color-white-100);
+  --field-placeholder: rgba(255, 255, 255, 0.6);
+}
+.field {
+  width: 100%; min-width: 0;
+  height: 48px; padding: 0 var(--space-16);
+  font-family: inherit; font-size: var(--font-size-14);
+  color: var(--field-color); background: transparent;
+  border: 1px solid var(--field-border); border-radius: 0;
+}
+textarea.field { height: auto; padding: var(--space-16); line-height: 1.6; resize: vertical; }
+/* opacity:1 because Firefox dims placeholders by default, which would double up
+   with the already-muted --field-placeholder. */
+.field::placeholder { color: var(--field-placeholder); opacity: 1; }
+.field:focus { outline: none; border-color: var(--field-border-focus); }
+
 /* ---- Header ----
    Mobile (Figma 390x60): solid obsidian bar, content always white.
    Desktop: transparent overlay with a subtle #12100E 50%→0% scrim; content
@@ -431,13 +467,6 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
 .site-footer__join-title { font-size: var(--font-size-24); font-weight: var(--font-weight-900); }
 .site-footer__join-copy { font-size: var(--font-size-14); line-height: 1.5; }
 .site-footer__form { display: flex; flex-direction: column; gap: 12px; margin-top: var(--space-8); }
-.site-footer__input {
-  height: 48px; padding: 0 var(--space-16);
-  background: transparent; border: 1px solid rgba(255,255,255,0.9);
-  color: var(--color-white-100); font: inherit; font-size: var(--font-size-14);
-  border-radius: 0;
-}
-.site-footer__input::placeholder { color: rgba(255,255,255,0.6); }
 .site-footer__links { display: flex; flex-direction: column; gap: var(--space-32); }
 .site-footer__col h3 {
   font-size: var(--font-size-16); font-weight: var(--font-weight-900);
@@ -522,6 +551,16 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
 .pdp__thumb img { width: 100%; height: 100%; object-fit: cover; }
 /* title -> price is 8; every block after price is 32 (8 gap + 24 margin) */
 .pdp__info { display: flex; flex-direction: column; gap: 0; padding: 0 var(--space-16); }
+/* Back link sits outside .pdp__info-content deliberately — see desktop rules
+   below, where that content block is vertically centered as a group; the
+   back link must stay pinned at the top regardless. */
+.pdp__back {
+  display: inline-flex; align-items: center; gap: var(--space-8);
+  padding: var(--space-16) 0; font-size: var(--font-size-14); font-weight: var(--font-weight-600);
+  color: var(--color-text-secondary); transition: color 0.2s ease;
+}
+.pdp__back:hover { color: var(--color-text-primary); }
+.pdp__info-content { display: flex; flex-direction: column; gap: 0; }
 .pdp__color, .pdp__buy, .pdp__blurb { margin-top: var(--space-24); }
 .pdp__title { font-size: var(--font-size-24); font-weight: var(--font-weight-800); }
 .pdp__price { font-size: var(--font-size-18); }
@@ -614,7 +653,7 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
     );
   }
   .site-header__inner {
-    height: auto; padding: var(--space-24) var(--space-32);
+    height: auto; padding: var(--space-24) var(--space-40);
     max-width: none; margin: 0;
   }
   .site-header__burger { display: none; }
@@ -710,10 +749,13 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .product-card__title { font-size: var(--font-size-18); }
   .product-card__price { font-size: var(--font-size-14); }
 
-  /* full viewport; top block / closer / copyright distribute down the page */
+  /* full viewport; top block / closer / copyright distribute down the page.
+     min-height (not height) so wide viewports — where the closer line's
+     vw-driven font-size grows tall — can grow the footer instead of
+     clipping the bottom padding off the copyright line. */
   .site-footer {
-    height: 100vh; min-height: 700px;
-    padding: 120px var(--space-32) var(--space-40);
+    min-height: max(100vh, 700px);
+    padding: 120px var(--space-40) var(--space-40);
     gap: 0; justify-content: space-between;
   }
   .site-footer__top { flex-direction: row; justify-content: space-between; gap: var(--space-64); }
@@ -727,9 +769,9 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   }
   .site-footer__col ul { grid-template-columns: 1fr; }
   .site-footer__col li a { font-size: var(--font-size-16); }
-  /* padding 32px/side, B = -101.38px  ->  100vw - 64px + 101.38px */
+  /* padding 40px/side, B = -101.38px  ->  100vw - 80px + 101.38px */
   .site-footer__closer {
-    font-size: calc((100vw + 37.38px) / 8.645);
+    font-size: calc((100vw + 21.38px) / 8.645);
     letter-spacing: var(--letter-spacing-neg-6-34); line-height: 1.15;
   }
 
@@ -755,8 +797,11 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
   .pdp__info {
     grid-column: span 5; grid-row: 1; min-width: 0;
     position: sticky; top: 0; height: 100vh; min-height: 700px;
-    gap: var(--space-8); /* restore title->price 8px (mobile is 0) */
-    padding: var(--space-32); align-self: start;
+    gap: 0; align-self: start;
+    /* top clears the fixed header (measured ~81px) with room to spare — the
+       back link sits flush at the column's top edge, so without this it's
+       physically underneath the header and unclickable there. */
+    padding: 100px var(--space-32) var(--space-32);
     display: flex; flex-direction: column; align-items: center;
     /* long info (e.g. open accordions) scrolls within the pinned column instead
        of spilling out of reach — scrollbar hidden to avoid a second visible bar */
@@ -764,14 +809,320 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
     scrollbar-width: none; -ms-overflow-style: none;
   }
   .pdp__info::-webkit-scrollbar { display: none; }
-  .pdp__info > * { width: 100%; max-width: 542px; }
-  /* Centre the info when it fits; when it's taller than the viewport the auto
-     margins collapse so it top-aligns and the column becomes fully scrollable. */
-  .pdp__info > :first-child { margin-top: auto; }
-  .pdp__info > :last-child { margin-bottom: auto; }
+  .pdp__back, .pdp__info-content { width: 100%; max-width: 542px; }
+  /* Pinned at the top, not part of the content block's centering below. */
+  .pdp__back { flex: 0 0 auto; }
+  /* Fills remaining height after the back link; centers its own children the
+     same way .pdp__info used to center all of its direct children. Centre when
+     it fits; when it's taller than the viewport the auto margins collapse so
+     it top-aligns and the column becomes fully scrollable. */
+  .pdp__info-content {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; gap: var(--space-8); /* restore title->price 8px (mobile is 0) */
+  }
+  .pdp__info-content > :first-child { margin-top: auto; }
+  .pdp__info-content > :last-child { margin-bottom: auto; }
   .pdp__accordions { padding: 0; margin-top: var(--space-16); }
   /* buy controls stay stacked full-width at all sizes, per design v2 */
 }
+
+/* ==========================================================================
+   Contact page — dark intro band, then a 50/50 media + form split (same
+   pattern as .brand-intro on the homepage). Mobile stacks the image above
+   the content; the 900px layer below restores the side-by-side row.
+   ========================================================================== */
+/* Inverted from the original dark treatment: white bg, dark text. Also flip
+   the section's data-section-theme to "light" in the markup (was "dark") so
+   the fixed header switches to dark text over this band instead of white. */
+.contact__intro {
+  position: relative; overflow: hidden;
+  background: var(--color-bg-primary); color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-neutral-grey-35);
+  /* top pad clears the fixed 60px mobile header; desktop overrides below */
+  padding: 100px var(--space-16) var(--space-48);
+  text-align: center;
+}
+.contact__intro-inner { position: relative; z-index: 1; }
+.contact__heading {
+  font-size: clamp(32px, 10.5vw, var(--type-mobile-heading2-size));
+  font-weight: var(--font-weight-800); line-height: 1.05;
+  letter-spacing: var(--letter-spacing-neg-0-98);
+}
+/* Type size/weight still matches .affiliate__sub — only the color inverted
+   (that section stayed dark) and the max-width dropped (centered, not a
+   fixed measure, now that there's no eyebrow/rule anchoring it left). */
+.contact__sub {
+  margin-top: var(--space-16);
+  font-size: var(--font-size-16); color: var(--color-text-secondary);
+}
+
+/* Policy pages (see initPolicyIntro in theme.js) reuse this exact .contact__intro
+   band as the standard "content page intro" — Shopify's own title comes through
+   in sentence case ("Privacy policy"), title-cased here to read as a heading. */
+[data-policy-intro] .contact__heading { text-transform: capitalize; }
+
+.contact__body { padding: 0; }
+
+/* 50/50 media + content split, same pattern as .brand-intro on the homepage:
+   mobile stacks a fixed-ratio image band above the content; desktop below
+   restores the side-by-side row. Image bleeds edge to edge (no side padding
+   on .contact__grid/.contact__media); content gets its own inset. */
+.contact__grid { display: flex; flex-direction: column; }
+.contact__media { aspect-ratio: 4 / 3; position: relative; overflow: hidden; background: var(--color-bg-inverse); }
+/* object-position explicit (not just relying on the cover default): keeps the
+   subject centered through every crop the container takes, from the wide
+   mobile band down to the narrow ~1:2 strip at the 900px breakpoint. */
+.contact__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.contact__media-placeholder { position: absolute; inset: 0; width: 100%; height: 100%; }
+.contact__content { padding: var(--space-48) var(--space-16); }
+
+/* Social row — quick links out for anyone who'd rather DM than fill in a
+   form. Deliberately plain (icon + handle, no card chrome): the form below
+   is the page's one real action, this is just a fast exit to it. */
+.contact__socials {
+  display: flex; flex-wrap: wrap; gap: var(--space-24);
+  padding: 0; margin: 0 0 var(--space-48); list-style: none;
+}
+/* Each item grows to fill the row equally, however many blocks the merchant
+   adds. min-width:0 (not the flex default of auto) lets a cell shrink below
+   its content width, so the row stays on one line instead of wrapping the
+   last item onto its own row on narrow phones. */
+.contact__socials li { flex: 1 1 0; min-width: 0; }
+.contact__social-link {
+  width: 100%; min-width: 0;
+  display: flex; align-items: center; gap: var(--space-8);
+  /* min-height 44px: comfortable tap target (was ~35px, content-sized only) */
+  min-height: 44px; padding: var(--space-8) 0;
+  color: var(--color-text-secondary); transition: color 0.2s ease;
+}
+.contact__social-link:hover { color: var(--color-bg-brand); }
+.contact__social-icon { flex: none; }
+/* min-width:0 + nowrap/ellipsis: last-resort guard so a long handle can never
+   push past its cell and force the whole page to scroll sideways. */
+.contact__social-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.contact__social-label,
+.contact__social-handle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contact__social-label {
+  font-size: var(--font-size-12); font-weight: var(--font-weight-700);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.contact__social-handle { font-size: var(--font-size-12); }
+/* Three cells of icon-beside-text stop fitting once the row gets narrow — the
+   labels start colliding with the next cell's icon. Two ranges hit this:
+   phones under ~420px, and the 900–1023px band where the desktop 50/50 split
+   makes the content column narrow again. Stack the icon above the text there,
+   so each cell only needs the text width and all three stay on one row. */
+@media (max-width: 419px), (min-width: 900px) and (max-width: 1023px) {
+  .contact__socials { gap: var(--space-8); }
+  .contact__social-link { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+.contact__main { width: 100%; }
+.contact__section-title {
+  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
+  letter-spacing: var(--letter-spacing-neg-0-3); margin-bottom: var(--space-8);
+}
+.contact__form-note { font-size: var(--font-size-14); color: var(--color-text-secondary); margin-bottom: var(--space-24); }
+
+.contact__form { display: flex; flex-direction: column; gap: var(--space-24); }
+.contact__row { display: flex; flex-direction: column; gap: var(--space-24); }
+/* No gap: labels are .visually-hidden (placeholder-as-label), so the field
+   wrapper holds the input alone. */
+.contact__field { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+/* Inputs carry .field — see the shared form-field block near the top. */
+.contact__submit { width: 100%; }
+
+/* No margin-bottom: .contact__form is already a flex column with its own
+   gap, which spaces this from whatever comes next. */
+.contact__success {
+  position: relative;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-16);
+  padding: var(--space-24) var(--space-48) var(--space-24) var(--space-16);
+  border-left: 3px solid var(--color-bg-brand); background: var(--color-bg-subtle);
+  font-size: var(--font-size-16); line-height: 1.6;
+}
+.contact__success p { margin: 0; }
+.contact__success-close {
+  position: absolute; top: var(--space-16); right: var(--space-16);
+  display: flex; color: var(--color-text-secondary); transition: color 0.2s ease;
+}
+.contact__success-close:hover { color: var(--color-text-primary); }
+.contact__success-close .icon { width: 18px; height: 18px; }
+.contact__errors {
+  padding: var(--space-16); border-left: 3px solid var(--color-crimson-100);
+  background: var(--color-bg-subtle);
+  font-size: var(--font-size-14); color: var(--color-text-primary);
+}
+.contact__errors ul { margin-top: var(--space-8); padding-left: var(--space-16); list-style: disc; }
+
+@media (min-width: 900px) {
+  .contact__intro { padding: 180px var(--space-40) var(--space-80); }
+  /* Same 48px / 520px measure as .affiliate__heading. (The intro's top padding
+     is ours, not the affiliate's — this band sits under the fixed header.) */
+  .contact__heading { font-size: var(--font-size-48); }
+  .contact__body { padding: 0; }
+  /* Row, stretched: media fills to match the content column's natural height
+     (which varies with form length) rather than forcing a fixed/100vh split
+     like .brand-intro does for its full-screen homepage moment. */
+  .contact__grid { flex-direction: row; align-items: stretch; }
+  .contact__media { flex: 0 0 50%; min-height: 0; aspect-ratio: auto; }
+  .contact__content { flex: 0 0 50%; min-width: 0; padding: var(--space-80) clamp(24px, 5.6vw, 80px); display: flex; flex-direction: column; justify-content: center; }
+  .contact__socials { margin-bottom: var(--space-64); }
+  .contact__row { flex-direction: row; gap: var(--space-24); }
+  .contact__section-title { font-size: var(--font-size-32); }
+}
+
+/* ==========================================================================
+   Generic content page (Shipping & Returns, FAQ, etc.) — main-page section.
+   Wrapper only: the .contact__intro band supplies the top spacing/header
+   clearance, .page__body carries the prose. Same shape as the policy pages
+   below, so both read as one "content page" system.
+
+   Policy pages (Privacy Policy, Refund Policy, etc.) are a separate case:
+   Shopify overrides content_for_layout with its own fixed markup
+   (.shopify-policy__container / __title / __body) regardless of what's in
+   templates/policy.liquid — that file only exists so policy pages render
+   inside our theme's layout (header/footer) instead of Shopify's bare
+   fallback page. The .shopify-policy__* rules below give that fixed markup
+   the same column width/header offset; the .rte rules are shared, since
+   Shopify wraps the policy body in .rte too.
+   ========================================================================== */
+.page__body { padding: var(--space-40) var(--space-16) var(--space-48); }
+
+/* ==========================================================================
+   Affiliate program page — pitch (affiliate-page) + form slot (affiliate-form).
+   Reuses .contact__intro for the header band and .accordion for the FAQ, so it
+   inherits the content-page system rather than inventing a second one.
+   ========================================================================== */
+.affiliate-page__body { padding: var(--space-40) var(--space-16) var(--space-48); max-width: 760px; margin: 0 auto; }
+.affiliate-page__title {
+  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
+  letter-spacing: var(--letter-spacing-neg-0-3); margin-bottom: var(--space-16);
+}
+.affiliate-block { margin-top: var(--space-48); }
+
+/* The offer — the one number that has to land. Red rule + oversized figure. */
+.affiliate-offer {
+  border-left: 3px solid var(--color-bg-brand);
+  background: var(--color-bg-subtle);
+  padding: var(--space-24) var(--space-16);
+}
+.affiliate-offer__figure {
+  font-size: var(--font-size-32); font-weight: var(--font-weight-900);
+  line-height: 1.05; letter-spacing: var(--letter-spacing-neg-0-98);
+}
+.affiliate-offer__detail {
+  margin-top: var(--space-8); font-size: var(--font-size-16);
+  line-height: 1.6; color: var(--color-text-secondary);
+}
+
+.affiliate-steps { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-24); }
+.affiliate-step { display: grid; grid-template-columns: 32px 1fr; column-gap: var(--space-16); row-gap: 4px; }
+.affiliate-step__num {
+  grid-row: 1 / span 2; align-self: start;
+  font-size: var(--font-size-18); font-weight: var(--font-weight-900);
+  color: var(--color-bg-brand); line-height: 1.35;
+}
+.affiliate-step__title { font-size: var(--font-size-18); font-weight: var(--font-weight-700); }
+.affiliate-step__copy { font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary); }
+
+.affiliate-reqs { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-8); }
+.affiliate-reqs li {
+  position: relative; padding-left: var(--space-24);
+  font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary);
+}
+/* Square bullet, matching the theme's zero-radius language. */
+.affiliate-reqs li::before {
+  content: ""; position: absolute; left: 0; top: 0.6em;
+  width: 8px; height: 8px; background: var(--color-bg-brand);
+}
+.affiliate-note {
+  margin-top: var(--space-16); padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
+}
+
+.affiliate-channels { display: grid; gap: var(--space-16); }
+.affiliate-channel { border: 1px solid var(--color-border-subtle); padding: var(--space-24) var(--space-16); }
+.affiliate-channel__name { font-size: var(--font-size-16); font-weight: var(--font-weight-700); margin-bottom: 4px; }
+.affiliate-channel__note { font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-secondary); }
+
+.affiliate-faq { margin-top: var(--space-8); }
+
+/* Form slot — visually separated from the pitch so it reads as "the action". */
+.affiliate-apply {
+  border-top: 1px solid var(--color-neutral-grey-35);
+  padding: var(--space-48) var(--space-16);
+}
+.affiliate-apply__inner { max-width: 760px; margin: 0 auto; }
+.affiliate-apply__title {
+  font-size: var(--font-size-24); font-weight: var(--font-weight-800);
+  letter-spacing: var(--letter-spacing-neg-0-3);
+}
+.affiliate-apply__sub { margin-top: var(--space-8); font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary); }
+.affiliate-apply__slot { margin-top: var(--space-24); }
+/* The form here is rendered by an app block, so we can't put .field on its
+   inputs — match the shared field by element instead. Scoped to the slot so it
+   can't leak into any other app block on the page. An app that ships its own
+   heavier styles may still win on specificity; if that happens, the fix is the
+   app's own style settings, not more !important here. */
+.affiliate-apply__slot input[type="text"],
+.affiliate-apply__slot input[type="email"],
+.affiliate-apply__slot input[type="tel"],
+.affiliate-apply__slot input[type="url"],
+.affiliate-apply__slot input[type="number"],
+.affiliate-apply__slot select,
+.affiliate-apply__slot textarea {
+  width: 100%; min-width: 0;
+  height: 48px; padding: 0 var(--space-16);
+  font-family: inherit; font-size: var(--font-size-14);
+  color: var(--field-color); background: transparent;
+  border: 1px solid var(--field-border); border-radius: 0;
+}
+.affiliate-apply__slot textarea { height: auto; padding: var(--space-16); line-height: 1.6; resize: vertical; }
+.affiliate-apply__slot ::placeholder { color: var(--field-placeholder); opacity: 1; }
+.affiliate-apply__slot input:focus,
+.affiliate-apply__slot select:focus,
+.affiliate-apply__slot textarea:focus { outline: none; border-color: var(--field-border-focus); }
+.affiliate-apply__empty {
+  border: 1px dashed var(--color-border-default); padding: var(--space-24) var(--space-16);
+  font-size: var(--font-size-14); line-height: 1.6; color: var(--color-text-muted);
+}
+.affiliate-apply__fallback { margin-top: var(--space-16); font-size: var(--font-size-16); }
+.affiliate-apply__fallback a { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--font-weight-700); }
+.affiliate-apply__fallback a:hover { color: var(--color-bg-brand); }
+
+@media (min-width: 900px) {
+  .affiliate-page__body { padding: var(--space-40) var(--space-40) var(--space-64); }
+  .affiliate-page__title { font-size: var(--font-size-32); }
+  .affiliate-block { margin-top: var(--space-64); }
+  .affiliate-offer { padding: var(--space-32); }
+  .affiliate-offer__figure { font-size: var(--font-size-48); }
+  .affiliate-channels { grid-template-columns: 1fr 1fr; gap: var(--space-24); }
+  .affiliate-channel { padding: var(--space-24); }
+  .affiliate-apply { padding: var(--space-64) var(--space-40) var(--space-80); }
+  .affiliate-apply__title { font-size: var(--font-size-32); }
+}
+/* #main-scoped: Shopify's own policy-*.css (injected on every policy page,
+   load order outside our control) sets the same .shopify-policy__container
+   class to max-width:65ch + 20px padding. Same specificity as a bare class
+   selector would be a coin-flip, so this is scoped under #main to reliably
+   win regardless of load order. */
+#main .shopify-policy__container { max-width: none; padding: 0 var(--space-16) var(--space-48); }
+#main .shopify-policy__title h1 { font-size: var(--font-size-18); font-weight: var(--font-weight-700); line-height: 1; margin-bottom: var(--space-24); }
+.rte { font-size: var(--font-size-16); line-height: 1.6; color: var(--color-text-secondary); }
+/* descendant (not child) combinator: Shopify wraps the policy body in an
+   extra <div>, so paragraphs sit one level deeper than in our own .page__content. */
+.rte p, .rte h2, .rte h3, .rte ul, .rte ol { margin-top: var(--space-16); }
+.rte > *:first-child, .rte > div:first-child > *:first-child { margin-top: 0; }
+.rte h2 { font-size: var(--font-size-18); font-weight: var(--font-weight-700); color: var(--color-text-primary); margin-top: var(--space-32); }
+.rte h3 { font-size: var(--font-size-16); font-weight: var(--font-weight-700); color: var(--color-text-primary); margin-top: var(--space-24); }
+.rte a { color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 2px; }
+.rte a:hover { color: var(--color-bg-brand); }
+.rte ul { padding-left: var(--space-24); list-style: disc; }
+.rte ol { padding-left: var(--space-24); list-style: decimal; }
+.rte li + li { margin-top: var(--space-8); }
+.rte strong { font-weight: var(--font-weight-700); color: var(--color-text-primary); }
 
 /* ==========================================================================
    Shop All page — reuses .product-card; toolbar (type tabs + filters),
@@ -964,6 +1315,12 @@ body.has-cart-open { overflow: hidden; }
 .shop__pagination a:hover { color: var(--color-bg-brand); }
 
 @media (max-width: 899px) {
+  #main .shopify-policy__container { padding-top: 60px; }
+  /* Extra 40px on top of the intro band's own bottom padding, once
+     initPolicyIntro (theme.js) has added it — a bit more separation than the
+     .contact__intro/.contact__body pairing uses, since policy body copy reads
+     better with room to breathe before it starts. */
+  #main .contact__intro + .shopify-policy__container { padding-top: var(--space-40); }
   .shop { padding-top: 60px; }
   .shop__label { gap: var(--space-40); }
   .shop__types { gap: var(--space-8); }
@@ -976,9 +1333,15 @@ body.has-cart-open { overflow: hidden; }
 }
 
 @media (min-width: 900px) {
+  /* Header clearance comes from .contact__intro's own top padding, so the
+     body only needs its own breathing room — matching the policy container. */
+  .page__body { padding: var(--space-40) var(--space-40) var(--space-64); }
+  #main .shopify-policy__container { padding: 120px var(--space-40) var(--space-64); } /* clears the overlay header */
+  #main .contact__intro + .shopify-policy__container { padding-top: var(--space-40); }
+  #main .shopify-policy__title h1 { font-size: var(--font-size-24); margin-bottom: var(--space-32); }
   .shop { padding-bottom: var(--space-64); }
-  .shop__label { padding: 120px var(--space-16) 0; } /* clears the overlay header */
-  .shop__title { font-size: var(--font-size-24); }
+  .shop__label { padding: 224px var(--space-40) 0; } /* clears the overlay header */
+  .shop__title { font-size: var(--font-size-32); font-weight: var(--font-weight-800); }
   /* full-bleed product grid: 4 cols, 16px gutters, 24px rows */
   .shop__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-24) var(--space-16); padding: var(--space-24) 0 0; }
   /* Desktop: filters drop over the grid from under the toolbar button rather than
@@ -1091,4 +1454,120 @@ body.has-cart-open { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .preloader__dots span { animation: none; opacity: 1; }
+}
+
+
+/* ---- Scroll-scrubbed video (canvas image sequence) ----
+   Section is --panels × 100vh tall. The canvas pin is sticky so it holds for the
+   whole run; the copy panels are absolutely positioned over it, one per 100vh,
+   so a single background carries several sections of content. */
+.scroll-video {
+  position: relative;
+  height: calc(var(--panels, 3) * 100svh);
+  background: var(--color-bg-inverse);
+}
+.scroll-video__pin {
+  position: sticky; top: 0;
+  height: 100svh; width: 100%;
+  overflow: hidden;
+}
+.scroll-video__canvas,
+.scroll-video__poster {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+.scroll-video__poster { object-fit: cover; object-position: top center; }
+/* Sits above the canvas, below the copy. A flat wash rather than a gradient so
+   the dimming is even wherever the panels land. */
+.scroll-video__dim {
+  position: absolute; inset: 0; z-index: 1;
+  background: rgba(18, 16, 14, var(--dim, 0.45));
+  pointer-events: none;
+}
+/* Grain layer. mix-blend-mode blends with everything painted below it inside
+   .scroll-video__pin (canvas + scrim) but not the copy, which paints after. */
+.scroll-video__noise {
+  position: absolute; inset: 0; z-index: 2;
+  /* The supplied grain render, used as one covering image — no tiling, so there
+     is no repeat to spot. It sits near mid-grey, which is Overlay's neutral
+     point, so it needs contrast expanded to register at 12%. Done with a CSS
+     filter rather than baked into the file, so --grain-contrast stays tunable
+     without re-encoding. */
+  background-image: url("noise-overlay.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  filter: contrast(var(--grain-contrast, 1.8));
+  opacity: var(--noise, 0.06);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Panels overlay the whole scroll run, stacked one per viewport. */
+.scroll-video__panels {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column;
+  pointer-events: none; /* never block scrolling over the background */
+}
+.scroll-video__panel {
+  flex: 0 0 100svh; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-32);
+}
+.scroll-video__overlay {
+  max-width: 720px; text-align: center;
+  color: var(--color-white-100);
+  pointer-events: auto; /* but the copy itself stays selectable */
+  text-shadow: 0 2px 24px rgba(18, 16, 14, 0.45);
+}
+/* Left-aligned variant: copy sits against the left edge rather than centred. */
+.scroll-video__panels--left .scroll-video__panel {
+  justify-content: flex-start;
+  padding-left: var(--space-16);
+  padding-right: var(--space-16);
+}
+.scroll-video__panels--left .scroll-video__overlay { text-align: left; }
+/* Eyebrow above the headline — bronze accent, from the existing palette. */
+.scroll-video__eyebrow {
+  margin-bottom: var(--space-16);
+  color: var(--color-accent-bronze);
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-900);
+  letter-spacing: var(--letter-spacing-0-13);
+}
+/* Same scale as .brand-intro__heading: 40px mobile, 56px from 900px up. */
+.scroll-video__heading {
+  font-size: 40px; font-weight: var(--font-weight-800);
+  line-height: 1.1; letter-spacing: var(--letter-spacing-neg-0-98);
+}
+.scroll-video__copy {
+  margin-top: var(--space-16);
+  font-size: var(--font-size-16); opacity: 0.9;
+}
+/* Thin progress line while the sequence preloads — a blank canvas with no
+   explanation reads as broken. Fades out once every frame is decoded. */
+.scroll-video__loading {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  height: 2px; background: rgba(255, 255, 255, 0.15);
+  transition: opacity 0.4s ease;
+}
+.scroll-video__loading[hidden] { display: block; opacity: 0; pointer-events: none; }
+.scroll-video__loading-bar { display: block; height: 100%; }
+.scroll-video__loading-bar i {
+  display: block; height: 100%; width: 0%;
+  background: var(--color-bg-brand);
+  transition: width 0.2s linear;
+}
+@media (min-width: 900px) {
+  .scroll-video__eyebrow { font-size: var(--font-size-18); }
+  .scroll-video__heading { font-size: var(--font-size-56); line-height: 1.05; }
+  .scroll-video__panels--left .scroll-video__panel { padding-left: var(--space-64); }
+}
+/* Without motion the sequence never scrubs, so collapse to a single viewport
+   rather than leaving several screens of dead scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-video { height: 100svh; }
+  .scroll-video__panels { position: relative; }
+  .scroll-video__panel { flex: 0 0 auto; }
 }

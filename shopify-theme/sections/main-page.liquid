@@ -1,6 +1,25 @@
-<section class="page" data-section="page" data-section-theme="light">
-  <div class="page__inner">
-    <h1 class="page__title">{{ page.title }}</h1>
+{%- comment -%}
+  Generic content page (Shipping & Returns, FAQ, etc.).
+
+  Uses the same intro band as the Contact page and the policy pages, so every
+  "content page" on the site reads as one system. Unlike policy pages — where
+  Shopify overrides content_for_layout and the band has to be assembled in JS
+  (see initPolicyIntro) — here we own the markup, so the heading is rendered
+  server-side. JS only promotes a leading "Last updated: ..." paragraph out of
+  the body into the subtext slot (initPageIntro), matching the policy layout.
+
+  NOTE: the attribute is data-content-intro, NOT data-page-intro — the latter
+  is the page-transition overlay in layout/theme.liquid.
+{%- endcomment -%}
+<section class="page" data-section="page">
+  <div class="contact__intro" data-section-theme="light">
+    <span class="noise" aria-hidden="true"></span>
+    <div class="contact__intro-inner" data-content-intro>
+      <h1 class="contact__heading">{{ page.title }}</h1>
+    </div>
+  </div>
+
+  <div class="page__body" data-section-theme="light">
     <div class="page__content rte">{{ page.content }}</div>
   </div>
 </section>

@@ -1,0 +1,177 @@
+{%- comment -%}
+  Contact page. Two bands:
+    1. Light intro — centered statement, sits under the overlay header like the
+       hero does; bordered off from the section below.
+    2. Media + form — same 50/50 split as .brand-intro on the homepage (image
+       left, content right on desktop; image band on top, content below on
+       mobile). Social row sits above the form as a quick DM-instead-of-form
+       exit; the form itself is a general inquiry, not a support ticket.
+  Social links are blocks so the merchant owns handles/URLs in the editor.
+{%- endcomment -%}
+
+<section class="contact" data-section="contact">
+  <div class="contact__intro" data-section-theme="light">
+    <span class="noise" aria-hidden="true"></span>
+    <div class="contact__intro-inner">
+      <h1 class="contact__heading">
+        {{ section.settings.heading }}
+        {%- if section.settings.heading_accent != blank %} <span class="text-brand">{{ section.settings.heading_accent }}</span>{% endif -%}
+      </h1>
+      {%- if section.settings.sub != blank -%}
+        <p class="contact__sub">{{ section.settings.sub }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="contact__body" data-section-theme="light">
+    <div class="contact__grid">
+      <div class="contact__media" data-section-theme="dark">
+        {%- if section.settings.image != blank -%}
+          <img src="{{ section.settings.image | image_url: width: 1600 }}" alt="{{ section.settings.image.alt | escape }}" loading="lazy">
+        {%- else -%}
+          {%- comment -%} 2400x2400 source: square/centered so it survives the
+            container's swing from a wide 4:3 mobile band down to a narrow
+            ~1:2 strip at the 900px breakpoint without losing the subject. {%- endcomment -%}
+          <img src="{{ 'Contact-Hero_2400x2400.webp' | asset_url }}" alt="Get in touch with SASSi" loading="lazy">
+        {%- endif -%}
+      </div>
+
+      <div class="contact__content">
+        {%- assign social_blocks = section.blocks | where: 'type', 'social' -%}
+        {%- if social_blocks.size > 0 -%}
+          <ul class="contact__socials">
+            {%- for block in social_blocks -%}
+              <li {{ block.shopify_attributes }}>
+                <a class="contact__social-link" href="{{ block.settings.url }}" target="_blank" rel="noopener noreferrer">
+                  <span class="contact__social-icon">{% render 'icon', name: block.settings.icon %}</span>
+                  <span class="contact__social-text">
+                    <span class="contact__social-label">{{ block.settings.label }}</span>
+                    <span class="contact__social-handle">{{ block.settings.handle }}</span>
+                  </span>
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+
+        <div class="contact__main">
+          <div class="contact__form-col reveal" id="contact-form">
+            <h2 class="contact__section-title">{{ section.settings.form_heading }}</h2>
+            {%- if section.settings.form_note != blank -%}
+              <p class="contact__form-note">{{ section.settings.form_note }}</p>
+            {%- endif -%}
+
+            {%- form 'contact', id: 'ContactForm', class: 'contact__form' -%}
+              {%- comment -%} Success/error banners sit above the fields, not in place of
+                them — the form stays visible and usable (e.g. to send a second message)
+                rather than vanishing and leaving an empty-looking page. {%- endcomment -%}
+              {%- if form.posted_successfully? -%}
+                <div class="contact__success" role="status" data-dismissible>
+                  <p>{{ section.settings.success_message }}</p>
+                  <button type="button" class="contact__success-close" data-dismiss aria-label="Dismiss">
+                    {% render 'icon', name: 'close' %}
+                  </button>
+                </div>
+              {%- endif -%}
+              {%- if form.errors -%}
+                <div class="contact__errors" role="alert">
+                  <p>{{ section.settings.error_message }}</p>
+                  <ul>
+                    {%- for field in form.errors -%}
+                      <li>{{ form.errors.messages[field] }}</li>
+                    {%- endfor -%}
+                  </ul>
+                </div>
+              {%- endif -%}
+
+              {%- comment -%} Placeholder-as-label, matching the footer and affiliate forms.
+                The <label> stays in the markup but is visually hidden: screen readers and
+                click-to-focus keep working, and the field still has an accessible name once
+                the placeholder disappears on typing. {%- endcomment -%}
+              <div class="contact__row">
+                <div class="contact__field">
+                  <label class="visually-hidden" for="ContactName">{{ section.settings.name_placeholder }}</label>
+                  <input class="field" type="text" id="ContactName" name="contact[name]" autocomplete="name"
+                         placeholder="{{ section.settings.name_placeholder }}"
+                         value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}" required>
+                </div>
+                <div class="contact__field">
+                  <label class="visually-hidden" for="ContactEmail">{{ section.settings.email_placeholder }}</label>
+                  <input class="field" type="email" id="ContactEmail" name="contact[email]" autocomplete="email"
+                         spellcheck="false" autocapitalize="off"
+                         placeholder="{{ section.settings.email_placeholder }}"
+                         value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}" required>
+                </div>
+              </div>
+
+              <div class="contact__field">
+                <label class="visually-hidden" for="ContactSubject">{{ section.settings.subject_placeholder }}</label>
+                <input class="field" type="text" id="ContactSubject" name="contact[Subject]"
+                       placeholder="{{ section.settings.subject_placeholder }}"
+                       value="{% if form.subject %}{{ form.subject }}{% endif %}" required>
+              </div>
+
+              <div class="contact__field">
+                <label class="visually-hidden" for="ContactBody">{{ section.settings.body_placeholder }}</label>
+                <textarea class="field" id="ContactBody" name="contact[body]" rows="6"
+                          placeholder="{{ section.settings.body_placeholder }}" required>{% if form.body %}{{ form.body }}{% endif %}</textarea>
+              </div>
+
+              <button type="submit" class="btn btn--dark contact__submit">
+                <span class="btn__label">{{ section.settings.submit_label }}</span>
+                <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
+              </button>
+            {%- endform -%}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Contact",
+  "settings": [
+    { "type": "header", "content": "Intro" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "How can we help you" },
+    { "type": "text", "id": "heading_accent", "label": "Heading accent (red)", "default": "carry on?" },
+    { "type": "textarea", "id": "sub", "label": "Subtext", "default": "Real people, real answers. Reach us however suits you — we read every message." },
+
+    { "type": "header", "content": "Image" },
+    { "type": "image_picker", "id": "image", "label": "Image", "info": "Shows placeholder art until an image is added." },
+
+    { "type": "header", "content": "Form" },
+    { "type": "text", "id": "form_heading", "label": "Form heading", "default": "Send us a message" },
+    { "type": "text", "id": "form_note", "label": "Note above the form", "default": "Tell us a bit about what you need — we'll get back to you soon." },
+    { "type": "text", "id": "submit_label", "label": "Submit button label", "default": "Send message" },
+    { "type": "header", "content": "Field placeholders", "info": "These double as the fields' labels, so keep them descriptive." },
+    { "type": "text", "id": "name_placeholder", "label": "Name", "default": "Your name" },
+    { "type": "text", "id": "email_placeholder", "label": "Email", "default": "Email address" },
+    { "type": "text", "id": "subject_placeholder", "label": "Subject", "default": "What's this about?" },
+    { "type": "text", "id": "body_placeholder", "label": "Message", "default": "Your message" },
+    { "type": "text", "id": "success_message", "label": "Success message", "default": "Thanks — your message is in. We'll get back to you soon." },
+    { "type": "text", "id": "error_message", "label": "Error message", "default": "Please check the highlighted fields and try again." }
+  ],
+  "blocks": [
+    {
+      "type": "social",
+      "name": "Social link",
+      "settings": [
+        {
+          "type": "select", "id": "icon", "label": "Platform", "default": "instagram",
+          "options": [
+            { "value": "instagram", "label": "Instagram" },
+            { "value": "facebook", "label": "Facebook" },
+            { "value": "tiktok", "label": "TikTok" }
+          ]
+        },
+        { "type": "text", "id": "label", "label": "Label", "default": "Instagram" },
+        { "type": "text", "id": "handle", "label": "Handle", "default": "@sassi.rabbit" },
+        { "type": "url", "id": "url", "label": "Link" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Contact" }]
+}
+{% endschema %}
