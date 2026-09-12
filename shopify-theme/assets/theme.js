@@ -1978,12 +1978,103 @@
       });
     };
 
+    // ---- Re-animating the swapped page's assets -----------------------------
+    // A <script> produced by DOMParser is flagged "already started" by the spec,
+    // so it is inert forever: inserting it into the live document runs nothing.
+    // Any JS the incoming page needs has to be re-created by hand.
+    //
+    // This matters most for app blocks. Shopify Forms ships the custom element
+    // that draws the affiliate application form, and its loader only appears on
+    // pages that host the block — so arriving at /pages/affiliate by soft
+    // navigation inserted a bare, un-upgraded <shopify-forms-embed> and the form
+    // was simply absent. A hard reload ran the script the normal way, which is
+    // why refreshing "fixed" it.
+    var absUrl = function (v) {
+      try { return new URL(v, window.location.href).href; } catch (e) { return null; }
+    };
+    var seenAssets = function (sel, prop) {
+      var seen = Object.create(null);
+      [].forEach.call(document.querySelectorAll(sel), function (el) { seen[el[prop]] = true; });
+      return seen;
+    };
+    var cloneScript = function (old) {
+      var fresh = document.createElement("script");
+      for (var i = 0; i < old.attributes.length; i++) {
+        fresh.setAttribute(old.attributes[i].name, old.attributes[i].value);
+      }
+      // defer is meaningless on an injected script and async defaults to true,
+      // which would let a later script beat an earlier one. Keep document order
+      // for anything that didn't explicitly opt into async.
+      if (old.hasAttribute("src")) {
+        if (!old.hasAttribute("async")) { fresh.async = false; }
+      } else {
+        fresh.textContent = old.textContent;
+      }
+      return fresh;
+    };
+
+    // Apps can also load through content_for_header, which lives outside <main>
+    // and so never arrives with the swap. Externals only — inline head scripts
+    // are Shopify's per-page analytics config, and re-running those double-counts.
+    var adoptHeadAssets = function (doc) {
+      var seenCss = seenAssets('link[rel="stylesheet"]', "href");
+      [].forEach.call(doc.querySelectorAll('head link[rel="stylesheet"][href]'), function (old) {
+        var abs = absUrl(old.getAttribute("href"));
+        if (!abs || seenCss[abs]) { return; }
+        seenCss[abs] = true;
+        var fresh = document.createElement("link");
+        fresh.rel = "stylesheet";
+        fresh.href = abs;
+        document.head.appendChild(fresh);
+      });
+      var seenJs = seenAssets("script[src]", "src");
+      [].forEach.call(doc.querySelectorAll("head script[src]"), function (old) {
+        var abs = absUrl(old.getAttribute("src"));
+        if (!abs || seenJs[abs]) { return; }
+        seenJs[abs] = true;
+        document.head.appendChild(cloneScript(old));
+      });
+    };
+
+    // Inline scripts have no src to dedupe on, so remember the ones already run.
+    // On a real page load each document gets a fresh JS context and re-running an
+    // inline script is harmless; here the context persists across navigations, so
+    // a second run of the same source hits customElements.define() twice and
+    // throws — taking the rest of that script's setup with it. Identical text
+    // means identical definitions, so skipping it is safe; genuinely per-page
+    // inline scripts differ and still run.
+    var ranInline = Object.create(null);
+
+    var reviveScripts = function (root) {
+      var seenJs = seenAssets("script[src]", "src");
+      [].forEach.call(root.querySelectorAll("script"), function (old) {
+        var srcAttr = old.getAttribute("src");
+        if (srcAttr) {
+          var abs = absUrl(srcAttr);
+          // Already live in the document: whatever it defines still stands, and
+          // a freshly inserted custom element upgrades against it on its own.
+          // Re-running it would throw on the second customElements.define().
+          if (!abs || seenJs[abs]) { old.parentNode.removeChild(old); return; }
+          seenJs[abs] = true;
+        } else {
+          var body = old.textContent || "";
+          if (body.trim() && ranInline[body]) { old.parentNode.removeChild(old); return; }
+          if (body.trim()) { ranInline[body] = true; }
+        }
+        old.parentNode.replaceChild(cloneScript(old), old);
+      });
+    };
+
     var swapContent = function (html, href, isPop) {
       var doc = new DOMParser().parseFromString(html, "text/html");
       var newMain = doc.querySelector("main");
       var curMain = document.querySelector("main");
       if (!newMain || !curMain) { return false; }
       curMain.replaceWith(newMain);
+      // Both run against the now-connected <main>, so the scripts execute where
+      // they would have on a normal load.
+      adoptHeadAssets(doc);
+      reviveScripts(newMain);
       if (doc.title) { document.title = doc.title; }
       document.body.className = doc.body.className; // per-page template class
       if (!isPop) {
