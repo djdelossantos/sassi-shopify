@@ -2065,11 +2065,30 @@
       });
     };
 
+    // Embeds that only ever initialise on a real page load. Reviving the swapped
+    // page's scripts (above) is not enough for these: after one hard load of the
+    // affiliate page the Forms bundle is already executed, so on a later soft
+    // navigation there is nothing left to re-run — the app has finished its
+    // one-time DOM scan and never notices the <shopify-forms-embed> we just
+    // inserted, leaving an empty element where the form should be.
+    //
+    // There is no hook to ask it to look again, so pages carrying one of these
+    // are handed back to the browser as an ordinary navigation, which is the one
+    // path the app is built for. Costs this page its transition, and re-requests
+    // the document (usually from cache) — worth it for a form that always works.
+    // Detected by content rather than by path, so moving the form to another page
+    // doesn't quietly reintroduce the bug.
+    // [id^="shopify-block-"] is the wrapper Shopify puts around every theme app
+    // extension block, so this holds even if the Forms tag name changes under us
+    // or another app block lands on a page later.
+    var UNSWAPPABLE_EMBEDS = 'shopify-forms-embed, #app-embed, [id^="shopify-block-"]';
+
     var swapContent = function (html, href, isPop) {
       var doc = new DOMParser().parseFromString(html, "text/html");
       var newMain = doc.querySelector("main");
       var curMain = document.querySelector("main");
       if (!newMain || !curMain) { return false; }
+      if (newMain.querySelector(UNSWAPPABLE_EMBEDS)) { return false; } // → hard navigate
       curMain.replaceWith(newMain);
       // Both run against the now-connected <main>, so the scripts execute where
       // they would have on a normal load.
@@ -2120,7 +2139,10 @@
       // page has arrived. A slow fetch just makes the orange linger.
       Promise.all([coverAnim(), fetchP]).then(function (out) {
         if (!swapContent(out[1], href, isPop)) {
-          window.location.href = href; // couldn't parse — fall back to a hard load
+          // Unparseable, or carrying an embed that only initialises on a real
+          // load — either way the browser does this navigation, not us. The
+          // cover stays up until the new document paints.
+          window.location.href = href;
           return;
         }
         return nextFrame().then(function () {
