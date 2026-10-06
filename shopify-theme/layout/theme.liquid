@@ -52,7 +52,13 @@
 
   {% section 'footer' %}
 
-  {% section 'cart-drawer' %}
+  {%- comment -%} Back to top — fades in once the page has scrolled a screen or so
+    (initBackToTop in theme.js). Outside <main> so it survives page swaps. {%- endcomment -%}
+  <button type="button" class="back-to-top" data-back-to-top aria-label="Back to top" tabindex="-1">
+    {% render 'icon', name: 'arrow-up' %}
+  </button>
+
+  {%- unless settings.marketplace_mode -%}{% section 'cart-drawer' %}{%- endunless -%}
 
   <script src="{{ 'lenis.min.js' | asset_url }}" defer></script>
   <script src="{{ 'gsap.min.js' | asset_url }}" defer></script>

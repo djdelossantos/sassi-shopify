@@ -1,0 +1,41 @@
+{%- comment -%}
+  Launch-time stand-in for add to cart: "Buy Now" expands into links to the
+  product's marketplace listings (see initMarketplaceBuy in theme.js). On by
+  the theme setting "Marketplace buying"; off restores the normal cart.
+
+  Links come from the product metafields custom.shopee_url / lazada_url /
+  tiktok_url, falling back to the store-wide shop links in theme settings. A
+  marketplace with neither is left out; with none at all the block is omitted.
+
+  Usage: {% render 'marketplace-buy', product: product %}
+{%- endcomment -%}
+{%- liquid
+  assign shopee_url = product.metafields.custom.shopee_url.value | default: settings.marketplace_shopee_url
+  assign lazada_url = product.metafields.custom.lazada_url.value | default: settings.marketplace_lazada_url
+  assign tiktok_url = product.metafields.custom.tiktok_url.value | default: settings.marketplace_tiktok_url
+  assign list_id = 'marketplace-' | append: product.id
+-%}
+{%- if shopee_url != blank or lazada_url != blank or tiktok_url != blank -%}
+  <div class="pdp__buy market" data-market>
+    <button type="button" class="btn btn--dark pdp__add" aria-expanded="false" aria-controls="{{ list_id }}" data-market-toggle>
+      <span class="btn__label">{{ settings.marketplace_button_label | default: 'Buy Now' }}</span>
+      <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
+    </button>
+    {%- comment -%} Grid 0fr → 1fr so the list slides open at its natural height.
+      New tab: on phones the marketplaces' links hand off to their apps when
+      installed, and on desktop the shopper keeps this page to come back to. {%- endcomment -%}
+    <div class="market__panel" id="{{ list_id }}" data-market-panel>
+      <ul class="market__list">
+        {%- if shopee_url != blank -%}
+          <li><a class="btn btn--outline" href="{{ shopee_url }}" target="_blank" rel="noopener"><span class="btn__label market__label">Buy on <img class="market__logo" src="{{ 'logo-shopee.png' | asset_url }}" alt="Shopee" width="63" height="20"></span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></a></li>
+        {%- endif -%}
+        {%- if lazada_url != blank -%}
+          <li><a class="btn btn--outline" href="{{ lazada_url }}" target="_blank" rel="noopener"><span class="btn__label market__label">Buy on <img class="market__logo" src="{{ 'logo-lazada.png' | asset_url }}" alt="Lazada" width="76" height="20"></span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></a></li>
+        {%- endif -%}
+        {%- if tiktok_url != blank -%}
+          <li><a class="btn btn--outline" href="{{ tiktok_url }}" target="_blank" rel="noopener"><span class="btn__label market__label">Buy on <img class="market__logo" src="{{ 'logo-tiktok-shop.png' | asset_url }}" alt="TikTok Shop" width="111" height="20"></span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></a></li>
+        {%- endif -%}
+      </ul>
+    </div>
+  </div>
+{%- endif -%}

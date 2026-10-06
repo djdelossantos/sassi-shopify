@@ -24,6 +24,35 @@
       assign type_filter = f
     endif
   endfor
+  # Exactly one colour picked in the Color filter (Search & Discovery, a
+  # variant-option filter) → cards show that colour's photo and open on it.
+  # E.g. the homepage Black Series button links to ?filter.v.option.color=Black.
+  # Tabs only help with two or more bag types; a single-type collection (e.g.
+  # /collections/backpacks) would just show "All Bags | Backpack".
+  # Shopify's filter index can hold values no product carries any more (seen
+  # live: "Backpack" and "Tote" beside the real "Backpacks" and "Totes", absent
+  # from Search & Discovery and from every product's Type). Only values that are
+  # a real product type in this collection become tabs.
+  assign type_count = 0
+  if type_filter
+    for v in type_filter.values
+      if type_list contains v.value
+        assign type_count = type_count | plus: 1
+      endif
+    endfor
+  else
+    for t in type_list
+      if t != blank
+        assign type_count = type_count | plus: 1
+      endif
+    endfor
+  endif
+  assign active_color = ''
+  for f in collection.filters
+    if f.param_name contains 'filter.v.option.colo' and f.active_values.size == 1
+      assign active_color = f.active_values.first.value
+    endif
+  endfor
 -%}
 <section class="shop" data-section-theme="light" data-shop-section>
   <div class="shop__label">
@@ -32,15 +61,30 @@
       <p class="shop__count" data-shop-count>{{ collection.products_count }} products</p>
     </div>
     <div class="shop__toolbar">
-      {%- if type_filter -%}
+      {%- if type_count < 2 -%}
+        {%- comment -%} No tabs; keeps the Filters button pinned right. {%- endcomment -%}
+        <div class="shop__types" aria-hidden="true"></div>
+      {%- elsif type_filter -%}
         {%- comment -%} Real storefront filtering — each tab is a filter URL, so it
-          works across pagination and agrees with the rest of the panel. {%- endcomment -%}
+          works across pagination and agrees with the rest of the panel.
+          Tabs are single-select: Shopify's v.url_to_add would ADD a type to the
+          ones already picked, so each tab instead clears the type filter (keeping
+          any others, e.g. Color) and sets just its own value. {%- endcomment -%}
+        {%- liquid
+          assign types_base = type_filter.url_to_remove
+          if types_base contains '?'
+            assign types_sep = '&'
+          else
+            assign types_sep = '?'
+          endif
+        -%}
         <div class="shop__types" aria-label="Product type" data-shop-types data-server-types>
           <a class="shop__type{% if type_filter.active_values.size == 0 %} is-active{% endif %}"
-             href="{{ type_filter.url_to_remove }}" data-type-link>All Bags</a>
+             href="{{ types_base }}" data-type-link>All Bags</a>
           {%- for v in type_filter.values -%}
-            <a class="shop__type{% if v.active %} is-active{% endif %}"
-               href="{% if v.active %}{{ v.url_to_remove }}{% else %}{{ v.url_to_add }}{% endif %}"
+            {%- unless type_list contains v.value -%}{%- continue -%}{%- endunless -%}
+            <a class="shop__type{% if v.active and type_filter.active_values.size == 1 %} is-active{% endif %}"
+               href="{{ types_base }}{{ types_sep }}{{ v.param_name }}={{ v.value | url_param_escape }}"
                data-type-link>{{ v.label }}</a>
           {%- endfor -%}
         </div>
@@ -168,7 +212,7 @@
         {%- comment -%} Pre-hide past the first page so there's no flash of the full
           grid before initShop runs; it takes over the visibility from there. {%- endcomment -%}
         <div class="shop__cell" data-type="{{ product.type | handle }}"{% if forloop.index0 >= page_size %} hidden{% endif %}>
-          {% render 'product-card', product: product %}
+          {% render 'product-card', product: product, color: active_color %}
         </div>
       {%- else -%}
         <p class="shop__empty">No products in this collection yet.</p>

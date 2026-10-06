@@ -316,6 +316,33 @@ html.has-gsap .category-card { opacity: 0; will-change: transform, opacity; }
 .category-card__title { font-size: var(--font-size-24); font-weight: var(--font-weight-900); }
 .category-card__copy { font-size: var(--font-size-14); line-height: 1.4; letter-spacing: 0.02em; color: var(--color-text-secondary); }
 .category-card .btn { margin-top: var(--space-8); }
+/* Linked cards: the title link stretches over the whole card; the optional
+   button sits above that overlay so it stays its own target. */
+.category-card--link { position: relative; }
+.category-card__link { color: inherit; outline: none; }
+.category-card__link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.category-card--link .btn { position: relative; z-index: 2; }
+/* Hover / keyboard focus: the photo eases in closer and an arrow slides in
+   beside the title. Slow ease-out keeps it calm rather than jumpy. */
+.category-card__image img { transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.9s ease; }
+.category-card__arrow {
+  display: inline-flex; vertical-align: middle; margin-left: var(--space-8);
+  opacity: 0; transform: translate(-6px, 6px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.category-card__arrow .icon { width: 20px; height: 20px; }
+@media (hover: hover) {
+  .category-card--link:hover .category-card__image img { transform: scale(1.05); filter: brightness(1.06); }
+  .category-card--link:hover .category-card__arrow { opacity: 1; transform: none; }
+}
+.category-card--link:focus-within .category-card__image img { transform: scale(1.05); }
+.category-card--link:focus-within .category-card__arrow { opacity: 1; transform: none; }
+.category-card__link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
+/* Touch screens have no hover, so keep the arrow showing as a quiet cue that
+   the card is tappable. */
+@media (hover: none) {
+  .category-card__arrow { opacity: 0.5; transform: none; }
+}
 
 /* ---- Lifestyle grid (mobile: full-bleed 2-col, tiles 195x260) ---- */
 .lifestyle { display: grid; grid-template-columns: 1fr 1fr; }
@@ -355,23 +382,28 @@ html.has-gsap .category-card { opacity: 0; will-change: transform, opacity; }
 .black-series__bags {
   /* Mobile: 2×2 grid, centred in the band BETWEEN the heading (~166px) and the CTA
      (~136px), so it never collides with them on short screens. --bag-h is sized so
-     the widest row (≈1.46 × bag-h) nearly reaches both edges, capped by the band
+     the widest row (≈1.43 × bag-h of visible bag) nearly reaches both edges, capped by the band
      height (svh) so the whole stack always fits. Desktop collapses to one lineup. */
   position: absolute; left: 0; right: 0; top: 166px; bottom: 136px; z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  --bag-h: clamp(150px, min(69vw - 14px, 51svh - 155px), 380px);
+  --bag-h: clamp(150px, min(66vw - 14px, 51svh - 155px), 380px);
 }
 .black-series__bag-row { display: flex; align-items: flex-end; justify-content: center; }
 .black-series__bag-row + .black-series__bag-row { margin-top: calc(var(--bag-h) * -0.05); }
 .black-series__bag { flex: none; height: var(--bag-h); width: auto; display: block; }
-/* left → right: Athena · Artemis · Atlas · Apollo (Figma overlaps ÷ 1235px frame) */
-/* Per-bag aspect-ratio (matches each PNG) so the box width is known before the
-   lazy image loads — otherwise the lineup reflows mid-animation on first load. */
-.black-series__bag--athena  { z-index: 4; aspect-ratio: 1729 / 2470; }
-.black-series__bag--artemis { z-index: 3; aspect-ratio: 2189 / 2470; margin-left: calc(var(--bag-h) * -0.129); }
-/* atlas starts row 2 on mobile → no left overlap here (restored for desktop below) */
-.black-series__bag--atlas   { z-index: 2; aspect-ratio: 1948 / 2470; }
-.black-series__bag--apollo  { z-index: 1; aspect-ratio: 1854 / 2470; margin-left: calc(var(--bag-h) * -0.113); }
+/* left → right: Athena · Artemis · Aries · Apollo. Margins give every pair the same
+   gap between the bag BODIES (~0.1 × bag-h, measured just above the baseline) —
+   protruding straps and clips (Athena's ring, Apollo's side clip) may tuck over a
+   neighbour, and the soft floor shadows overlap. */
+/* No aspect-ratio here: each <img> carries its file's width/height, which the
+   browser uses to size the box before the lazy image loads (so the lineup
+   doesn't reflow mid-animation) and which keeps any replacement photo from
+   being stretched into a fixed slot shape. */
+.black-series__bag--athena  { z-index: 4; }
+.black-series__bag--artemis { z-index: 3; margin-left: calc(var(--bag-h) * -0.1696); }
+/* aries starts row 2 on mobile → no left overlap here (restored for desktop below) */
+.black-series__bag--aries   { z-index: 2; }
+.black-series__bag--apollo  { z-index: 1; margin-left: calc(var(--bag-h) * -0.1026); }
 .black-series__head, .black-series__cta { z-index: 2; }
 .black-series__head {
   position: absolute; top: var(--space-80); left: 0; right: 0;
@@ -475,6 +507,12 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
 .site-footer__join-title { font-size: var(--font-size-24); font-weight: var(--font-weight-900); }
 .site-footer__join-copy { font-size: var(--font-size-14); line-height: 1.5; }
 .site-footer__form { display: flex; flex-direction: column; gap: 12px; margin-top: var(--space-8); }
+/* Signup result, on the dark footer: the thank-you reads as a quiet confirmation;
+   errors take the brand red. Shopify's default_errors markup is a list. */
+.site-footer__form[hidden], .site-footer__form-success[hidden], .site-footer__form-error[hidden] { display: none; }
+.site-footer__form-success { margin-top: var(--space-8); font-size: var(--font-size-16); font-weight: var(--font-weight-700); }
+.site-footer__form-error { font-size: var(--font-size-14); color: var(--color-bg-brand); }
+.site-footer__form-error ul { list-style: none; margin: 0; padding: 0; }
 .site-footer__links { display: flex; flex-direction: column; gap: var(--space-32); }
 .site-footer__col h3 {
   font-size: var(--font-size-16); font-weight: var(--font-weight-900);
@@ -539,6 +577,9 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
 .pdp__media-item.is-main { display: block; }
 .pdp__media-item img { width: 100%; height: 100%; object-fit: cover; }
 .pdp__media { position: relative; }
+/* Another colour's photos (and the strip/dots when one photo is left). Beats
+   the desktop stack's display:block and the strip's display:flex. */
+.pdp__gallery .is-filtered-out { display: none !important; }
 /* pagination dots overlaid on the bottom of the main image (mobile) */
 .pdp__dots { position: absolute; bottom: var(--space-16); left: 0; right: 0; display: flex; justify-content: center; gap: 4px; }
 .pdp__dot { width: 8px; height: 8px; background: var(--color-neutral-grey-35); }
@@ -589,8 +630,29 @@ html.has-gsap .affiliate__rule { transform: scaleX(0); }
   width: 100%; height: 48px; padding: 0 var(--space-16);
   border: 1px solid var(--color-obsidian-black-100);
 }
+/* Marketplace buying: Buy Now expands into the marketplace links. Collapsed
+   only once JS marks it .is-ready, so without JS the links simply show. The
+   0fr → 1fr row animates to the list's natural height. */
+.market { gap: 0; }
+.market__panel { display: grid; grid-template-rows: 1fr; }
+.market.is-ready .market__panel { grid-template-rows: 0fr; transition: grid-template-rows 0.35s ease; }
+.market.is-ready.is-open .market__panel { grid-template-rows: 1fr; }
+.market__list {
+  min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: var(--space-8);
+  list-style: none; margin: 0; padding: 0;
+}
+.market__list li:first-child { margin-top: var(--space-8); }
+.market .btn--outline { border-color: var(--color-obsidian-black-100); }
+/* "Buy on [logo]": logo sized to the label, centred on the text line. */
+.market__label { display: inline-flex; align-items: center; gap: var(--space-8); }
+.market__logo { display: block; height: 20px; width: auto; }
+.market .pdp__add .btn__icon { transition: transform 0.35s ease; }
+.market.is-open .pdp__add .btn__icon { transform: rotate(90deg); }
 .pdp__blurb { font-size: var(--font-size-16); color: var(--color-text-secondary); line-height: 1.6; }
-.pdp__accordions { padding: 0; margin-top: var(--space-16); }
+/* Mobile: same 24 below the buy button as above it. Desktop keeps 16 (see the
+   900px block). */
+.pdp__accordions { padding: 0; margin-top: var(--space-24); }
 .accordion { border-top: 1px solid var(--color-neutral-grey-100); }
 .accordion:last-child { border-bottom: 1px solid var(--color-neutral-grey-100); }
 .accordion summary {
@@ -724,9 +786,9 @@ html.has-gsap .reveal { opacity: 0; transform: translateY(24px); }
 
   .black-series { height: 100vh; min-height: 700px; }
   /* Desktop composition: collapse the two rows into one 4-wide lineup. */
-  .black-series__bags { flex-direction: row; justify-content: center; align-items: flex-end; top: auto; bottom: 18%; --bag-h: 32vw; }
+  .black-series__bags { flex-direction: row; justify-content: center; align-items: flex-end; top: auto; bottom: 18%; --bag-h: 30vw; }
   .black-series__bag-row { display: contents; }
-  .black-series__bag--atlas { margin-left: calc(var(--bag-h) * -0.169); } /* restore desktop overlap */
+  .black-series__bag--aries { margin-left: calc(var(--bag-h) * -0.1074); } /* row 2 starts here on mobile; on desktop it follows Artemis */
   .black-series__head { top: var(--space-72); gap: var(--space-16); }
   .black-series__heading { font-size: var(--font-size-56); }
   .black-series__sub { font-size: var(--font-size-18); }
@@ -1515,79 +1577,42 @@ body.has-cart-open { overflow: hidden; }
 }
 
 
-/* ---- Scroll-scrubbed video (canvas image sequence) ----
-   Section is --panels × 100vh tall. The canvas pin is sticky so it holds for the
-   whole run; the copy panels are absolutely positioned over it, one per 100vh,
-   so a single background carries several sections of content. */
-.scroll-video {
+/* ---- Image panels (About Us: static tall background) ----
+   One image covers the whole section and scrolls with it; the panels set the
+   height, one viewport each. Screens are narrower than the image, so the crop
+   leans right to keep the keychain and its logo in view — hardest on phones.
+   The image carries its own darkening and grain, so there's no overlay here. */
+.image-panels {
   position: relative;
-  height: calc(var(--panels, 3) * 100svh);
+  overflow: hidden;
   background: var(--color-bg-inverse);
 }
-.scroll-video__pin {
-  position: sticky; top: 0;
-  height: 100svh; width: 100%;
-  overflow: hidden;
-}
-.scroll-video__canvas,
-.scroll-video__poster {
+.image-panels__bg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
+  object-fit: cover; object-position: 90% top;
   display: block;
 }
-.scroll-video__poster { object-fit: cover; object-position: top center; }
-/* Sits above the canvas, below the copy. A flat wash rather than a gradient so
-   the dimming is even wherever the panels land. */
-.scroll-video__dim {
-  position: absolute; inset: 0; z-index: 1;
-  background: rgba(18, 16, 14, var(--dim, 0.45));
-  pointer-events: none;
-}
-/* Grain layer. mix-blend-mode blends with everything painted below it inside
-   .scroll-video__pin (canvas + scrim) but not the copy, which paints after. */
-.scroll-video__noise {
-  position: absolute; inset: 0; z-index: 2;
-  /* The supplied grain render, used as one covering image — no tiling, so there
-     is no repeat to spot. It sits near mid-grey, which is Overlay's neutral
-     point, so it needs contrast expanded to register at 12%. Done with a CSS
-     filter rather than baked into the file, so --grain-contrast stays tunable
-     without re-encoding. */
-  background-image: url("noise-overlay.webp");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-  filter: contrast(var(--grain-contrast, 1.8));
-  opacity: var(--noise, 0.06);
-  mix-blend-mode: overlay;
-  pointer-events: none;
-}
-
-/* Panels overlay the whole scroll run, stacked one per viewport. */
-.scroll-video__panels {
-  position: absolute; inset: 0; z-index: 3;
-  display: flex; flex-direction: column;
-  pointer-events: none; /* never block scrolling over the background */
-}
-.scroll-video__panel {
-  flex: 0 0 100svh; min-height: 0;
+.image-panels__panels { position: relative; z-index: 1; }
+.image-panels__panel {
+  min-height: 100svh;
   display: flex; align-items: center; justify-content: center;
   padding: var(--space-32);
 }
-.scroll-video__overlay {
+.image-panels__overlay {
   max-width: 720px; text-align: center;
   color: var(--color-white-100);
-  pointer-events: auto; /* but the copy itself stays selectable */
   text-shadow: 0 2px 24px rgba(18, 16, 14, 0.45);
 }
 /* Left-aligned variant: copy sits against the left edge rather than centred. */
-.scroll-video__panels--left .scroll-video__panel {
+.image-panels__panels--left .image-panels__panel {
   justify-content: flex-start;
   padding-left: var(--space-16);
   padding-right: var(--space-16);
 }
-.scroll-video__panels--left .scroll-video__overlay { text-align: left; }
+.image-panels__panels--left .image-panels__overlay { text-align: left; }
 /* Eyebrow above the headline — bronze accent, from the existing palette. */
-.scroll-video__eyebrow {
+.image-panels__eyebrow {
   margin-bottom: var(--space-16);
   color: var(--color-accent-bronze);
   font-size: var(--font-size-16);
@@ -1595,37 +1620,122 @@ body.has-cart-open { overflow: hidden; }
   letter-spacing: var(--letter-spacing-0-13);
 }
 /* Same scale as .brand-intro__heading: 40px mobile, 56px from 900px up. */
-.scroll-video__heading {
+.image-panels__heading {
   font-size: 40px; font-weight: var(--font-weight-800);
   line-height: 1.1; letter-spacing: var(--letter-spacing-neg-0-98);
 }
-.scroll-video__copy {
+/* Hidden until theme.js splits it into masked lines (the stagger-in). */
+html.has-gsap .image-panels__heading { visibility: hidden; }
+.image-panels__copy {
   margin-top: var(--space-16);
   font-size: var(--font-size-16); opacity: 0.9;
 }
-/* Thin progress line while the sequence preloads — a blank canvas with no
-   explanation reads as broken. Fades out once every frame is decoded. */
-.scroll-video__loading {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
-  height: 2px; background: rgba(255, 255, 255, 0.15);
-  transition: opacity 0.4s ease;
-}
-.scroll-video__loading[hidden] { display: block; opacity: 0; pointer-events: none; }
-.scroll-video__loading-bar { display: block; height: 100%; }
-.scroll-video__loading-bar i {
-  display: block; height: 100%; width: 0%;
-  background: var(--color-bg-brand);
-  transition: width 0.2s linear;
-}
 @media (min-width: 900px) {
-  .scroll-video__eyebrow { font-size: var(--font-size-18); }
-  .scroll-video__heading { font-size: var(--font-size-56); line-height: 1.05; }
-  .scroll-video__panels--left .scroll-video__panel { padding-left: var(--space-64); }
+  .image-panels__bg { object-position: 85% top; }
+  .image-panels__eyebrow { font-size: var(--font-size-18); }
+  .image-panels__heading { font-size: var(--font-size-56); line-height: 1.05; }
+  /* Mockup inset is 120px at 1440 wide; as a percentage it scales with the
+     viewport (75px at 900, 160px at 1920). */
+  .image-panels__panels--left .image-panels__panel { padding-left: calc(120 / 1440 * 100%); }
 }
-/* Without motion the sequence never scrubs, so collapse to a single viewport
-   rather than leaving several screens of dead scroll. */
-@media (prefers-reduced-motion: reduce) {
-  .scroll-video { height: 100svh; }
-  .scroll-video__panels { position: relative; }
-  .scroll-video__panel { flex: 0 0 auto; }
+
+/* ---- Back to top ----
+   A small smoked-glass square in the lower right: dark enough to read on white
+   sections, with a light hairline and blur so it doesn't vanish on dark ones.
+   Hidden until the page is scrolled (.is-visible via initBackToTop), and kept
+   under the header (z 100) so the mobile menu and cart drawer cover it. */
+.back-to-top {
+  position: fixed; right: var(--space-16); bottom: var(--space-16); z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; padding: 0; border-radius: 0;
+  color: var(--color-white-100);
+  background: rgba(18, 16, 14, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  opacity: 0; visibility: hidden; transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s, background-color 0.2s ease;
+  cursor: pointer;
+}
+.back-to-top.is-visible {
+  opacity: 0.8; visibility: visible; transform: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s, background-color 0.2s ease;
+}
+.back-to-top:hover, .back-to-top:focus-visible { opacity: 1; background: rgba(18, 16, 14, 0.8); }
+.back-to-top .icon { transition: transform 0.25s ease; }
+.back-to-top:hover .icon { transform: translateY(-2px); }
+@media (min-width: 900px) {
+  .back-to-top { right: var(--space-24); bottom: var(--space-24); width: 44px; height: 44px; }
+}
+
+/* ---- 404 ----
+   Full-screen dark page. The outlined "404" is decoration only: huge, hairline
+   stroke, pinned to the right (top on phones) behind the copy. The copy sits
+   bottom-left with the same fluid inset as the About panels. */
+.notfound {
+  position: relative; overflow: hidden;
+  min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 120px var(--space-16) var(--space-48);
+  background: var(--color-bg-inverse);
+  color: var(--color-text-on-inverse);
+}
+.notfound__digits {
+  position: absolute; top: 96px; right: -0.04em;
+  display: flex; margin: 0;
+  font-size: 46vw; font-weight: var(--font-weight-900);
+  line-height: 0.8; letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.18);
+  user-select: none; pointer-events: none;
+}
+/* inline-block so each digit can rise in on its own (theme.js). */
+.notfound__digit { display: inline-block; padding: 0 0.02em; }
+.notfound__content { position: relative; z-index: 1; max-width: 560px; }
+.notfound__eyebrow {
+  margin-bottom: var(--space-16);
+  color: var(--color-accent-bronze);
+  font-size: var(--font-size-16); font-weight: var(--font-weight-900);
+  letter-spacing: var(--letter-spacing-0-13); text-transform: uppercase;
+}
+.notfound__title {
+  font-size: 40px; font-weight: var(--font-weight-800);
+  line-height: 1.1; letter-spacing: var(--letter-spacing-neg-0-98);
+}
+.notfound__body {
+  margin-top: var(--space-16);
+  font-size: var(--font-size-16); line-height: 1.5; opacity: 0.8;
+}
+.notfound__actions { display: flex; flex-direction: column; gap: var(--space-8); margin-top: var(--space-32); }
+/* The outline button is drawn for light pages; flip it for the dark one. */
+.notfound .notfound__btn-outline { color: var(--color-white-100); border-color: rgba(255, 255, 255, 0.4); }
+.notfound .notfound__btn-outline:hover { border-color: var(--color-white-100); opacity: 1; }
+.notfound__search {
+  display: flex; align-items: center; margin-top: var(--space-24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  transition: border-color 0.2s ease;
+}
+.notfound__search:focus-within { border-color: var(--color-white-100); }
+.notfound__search-input {
+  flex: 1; min-width: 0; height: 48px; padding: 0;
+  background: transparent; border: 0; outline: none;
+  color: var(--color-white-100); font: inherit; font-size: var(--font-size-16);
+}
+.notfound__search-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.notfound__search-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 48px; color: var(--color-white-100); opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+.notfound__search-btn:hover, .notfound__search-btn:focus-visible { opacity: 1; }
+@media (min-width: 900px) {
+  .notfound {
+    justify-content: center;
+    padding: 140px var(--space-64) var(--space-64) calc(120 / 1440 * 100%);
+  }
+  .notfound__digits { top: 50%; transform: translateY(-50%); font-size: 36vw; }
+  .notfound__eyebrow { font-size: var(--font-size-18); }
+  .notfound__title { font-size: var(--font-size-56); line-height: 1.05; }
+  .notfound__body { font-size: var(--font-size-18); }
+  .notfound__actions { flex-direction: row; }
+  .notfound__actions .btn { width: 220px; }
 }

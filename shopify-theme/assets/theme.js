@@ -261,15 +261,16 @@
 
   // Shopify PDP: map the swatch/select choices to a variant and keep the hidden
   // variant id, price, and add-to-cart state in sync. Supersedes initSwatches when
-  // a product-json payload is present.
+  // a product-json payload is present. With marketplace buying on there is no
+  // form, but the swatches and price still need to work.
   function initProductForm() {
     var form = document.querySelector(".pdp__form");
     var dataEl = document.querySelector("[data-product-json]");
-    if (!form || !dataEl) return;
+    if (!dataEl) return;
     var variants;
     try { variants = JSON.parse(dataEl.textContent); } catch (e) { return; }
-    var idInput = form.querySelector("[name='id']");
-    var addBtn = form.querySelector("[data-add]");
+    var idInput = form && form.querySelector("[name='id']");
+    var addBtn = form && form.querySelector("[data-add]");
     var addLabel = addBtn && addBtn.querySelector(".btn__label");
     var priceEl = document.querySelector("[data-price]");
     var addText = dataEl.getAttribute("data-add-text") || "Add to bag";
@@ -320,6 +321,7 @@
           var lbl = g.querySelector("[data-color-label]");
           if (lbl) { lbl.textContent = sw.getAttribute("data-value"); }
           update();
+          pdpGallery.filter(sw.getAttribute("data-value")); // swatches only render for the colour option
         });
       });
       var sel = g.querySelector("[data-option-select]");
@@ -329,7 +331,7 @@
     // Add to bag without leaving the page, then slide the drawer in. If the
     // request fails we fall back to a normal form post so the shopper is never
     // stuck with a button that silently does nothing.
-    form.addEventListener("submit", function (e) {
+    if (form) form.addEventListener("submit", function (e) {
       if (!document.querySelector("[data-cart-drawer]")) { return; } // no drawer: native post
       e.preventDefault();
       var busyLabel = addLabel ? addLabel.textContent : "";
@@ -352,33 +354,90 @@
     update();
   }
 
+  // Marketplace buying: "Buy Now" expands the list of marketplace links below it.
+  // The panel ships open so it still works without JS; collapse it here, and make
+  // it inert while closed so its links are skipped by Tab and screen readers.
+  function initMarketplaceBuy() {
+    var root = document.querySelector("[data-market]");
+    if (!root) return;
+    var toggle = root.querySelector("[data-market-toggle]");
+    var panel = root.querySelector("[data-market-panel]");
+    var set = function (open) {
+      root.classList.toggle("is-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      panel.inert = !open;
+    };
+    root.classList.add("is-ready");
+    set(false);
+    toggle.addEventListener("click", function () {
+      set(!root.classList.contains("is-open"));
+    });
+  }
+
+  // PDP gallery. Items, thumbs and dots line up by index. Mobile shows the one
+  // item marked .is-main; desktop stacks every item that isn't .is-filtered-out.
+  // filter(colour) keeps that colour's photos plus the shared ones (see the
+  // colour-filtering notes in main-product.liquid) and restarts at the first.
+  var pdpGallery = { filter: function () {} };
+
   function initGallery() {
     var gallery = document.querySelector("[data-gallery]");
+    pdpGallery.filter = function () {};
     if (!gallery) return;
-    var mainImg = gallery.querySelector("[data-gallery-main] img");
-    var mediaImages = [].slice.call(gallery.querySelectorAll(".pdp__media-item img"));
-    var fullSources = mediaImages.map(function (img) { return img.getAttribute("src") || img.src; });
+    var items =[].slice.call(gallery.querySelectorAll(".pdp__media-item"));
     var strip = gallery.querySelector("[data-gallery-thumbs]");
+    var dotsWrap = gallery.querySelector("[data-gallery-dots]");
     var thumbs = [].slice.call(gallery.querySelectorAll(".pdp__thumb"));
     var dots = [].slice.call(gallery.querySelectorAll(".pdp__dot"));
+    var visible = [];
     var current = 0;
+    var collectVisible = function () {
+      visible = [];
+      items.forEach(function (it, i) { if (!it.classList.contains("is-filtered-out")) { visible.push(i); } });
+    };
+    // index is a position within the visible photos, not within all of them.
     var setActive = function (index) {
-      index = Math.max(0, Math.min(thumbs.length - 1, index));
+      index = Math.max(0, Math.min(visible.length - 1, index));
       current = index;
-      thumbs.forEach(function (t, i) { t.classList.toggle("is-active", i === index); });
-      dots.forEach(function (d, i) { d.classList.toggle("is-active", i === index); });
-      var full = fullSources[index];
-      if (full && mainImg) { mainImg.src = full; }
-      if (strip && thumbs[index]) {
-        var t = thumbs[index];
+      var active = visible[index];
+      items.forEach(function (it, i) { it.classList.toggle("is-main", i === active); });
+      thumbs.forEach(function (t, i) { t.classList.toggle("is-active", i === active); });
+      dots.forEach(function (d, i) { d.classList.toggle("is-active", i === active); });
+      var t = thumbs[active];
+      if (strip && t) {
         var target = t.offsetLeft - (strip.clientWidth / 2) + (t.offsetWidth / 2);
         strip.scrollTo({ left: target, behavior: "smooth" });
       }
     };
-    thumbs.forEach(function (t, i) { t.addEventListener("click", function () { setActive(i); }); });
-    dots.forEach(function (d, i) { d.addEventListener("click", function () { setActive(i); }); });
+    thumbs.forEach(function (t, i) { t.addEventListener("click", function () { setActive(visible.indexOf(i)); }); });
+    dots.forEach(function (d, i) { d.addEventListener("click", function () { setActive(visible.indexOf(i)); }); });
 
-    var main = gallery.querySelector("[data-gallery-main]");
+    pdpGallery.filter = function (colour) {
+      colour = String(colour || "").trim().toLowerCase();
+      var own = items.some(function (it) { return it.getAttribute("data-media-color") === colour; });
+      items.forEach(function (it, i) {
+        var c = it.getAttribute("data-media-color");
+        var out = own && c !== "" && c !== colour;
+        [it, thumbs[i], dots[i]].forEach(function (el) { if (el) { el.classList.toggle("is-filtered-out", out); } });
+      });
+      collectVisible();
+      [strip, dotsWrap].forEach(function (el) { if (el) { el.classList.toggle("is-filtered-out", visible.length < 2); } });
+      setActive(0);
+      // Desktop stacks every photo, so a shopper scrolled down the old colour's
+      // photos would be left at a different place in the new, differently sized
+      // stack, often the footer. Jump back to the new colour's first photo
+      // instead, in the same frame as the swap so there's no flash of footer.
+      var galleryTop = gallery.getBoundingClientRect().top + window.scrollY;
+      if (window.matchMedia("(min-width: 900px)").matches && window.scrollY > galleryTop) {
+        window.scrollTo(0, galleryTop);
+        if (lenis) { lenis.scrollTo(galleryTop, { immediate: true, force: true }); }
+      }
+      if (typeof ScrollTrigger !== "undefined") { ScrollTrigger.refresh(); }
+    };
+    collectVisible();
+    current = Math.max(0, visible.indexOf(items.findIndex(function (it) { return it.classList.contains("is-main"); })));
+
+    var main = gallery.querySelector("[data-gallery-stage]");
     if (main) {
       var startX = 0, startY = 0, tracking = false;
       main.addEventListener("touchstart", function (e) {
@@ -408,6 +467,10 @@
       });
     });
   }
+
+  // Search & Discovery's Product type filter parameter. Homepage category cards
+  // link to /collections/all with it; the client-side tabs honour it too.
+  var TYPE_PARAM = "filter.p.product_type";
 
   function initShop() {
     var shopGrid = document.querySelector("[data-shop-grid]");
@@ -445,8 +508,22 @@
           activeType = tab.getAttribute("data-type");
           visibleCount = pageSize;
           shopApply();
+          // Mirror the tab in the URL, in the same form a server-side Product type
+          // filter uses, so a refresh or shared link lands on the same tab.
+          var url = new URL(window.location.href);
+          if (activeType === "all") { url.searchParams.delete(TYPE_PARAM); }
+          else { url.searchParams.set(TYPE_PARAM, tab.textContent.trim()); }
+          history.replaceState(history.state, "", url.pathname + url.search + url.hash);
         });
       });
+      // Arriving with a type in the URL (e.g. from a homepage category card):
+      // open on that tab. Unknown types fall back to All Bags.
+      var wanted = new URLSearchParams(window.location.search).get(TYPE_PARAM);
+      if (wanted) {
+        var wantedHandle = wanted.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        var match = types.querySelector('.shop__type[data-type="' + wantedHandle + '"]');
+        if (match) { match.click(); }
+      }
     }
 
     // Filter dropdown. .is-filtering still carries the state (CSS needs it for
@@ -1260,246 +1337,79 @@
     });
   }
 
-  /* ---------------------- Scroll-scrubbed video ----------------------
-     Apple's technique: the clip is an image sequence painted to a canvas, with
-     scroll position mapped to frame index. No <video>, so no decoder seeking —
-     scrubbing is frame-accurate forwards and backwards.
-
-     The section is tall and its inner pin is position:sticky (rather than a GSAP
-     pin) so the layout stays honest under Lenis; ScrollTrigger only reports
-     progress. */
-  function initScrollVideo() {
-    var section = document.querySelector("[data-scroll-video]");
-    if (!section || section.hasAttribute("data-sv-bound")) { return; }
-    section.setAttribute("data-sv-bound", "");
-
-    var canvas = section.querySelector("[data-scroll-video-canvas]");
-    if (!canvas) { return; }
-    var ctx = canvas.getContext("2d", { alpha: false });
-    // Pick the art-directed set before anything loads, so a phone never fetches
-    // the desktop frames. Chosen once — a mid-session rotation keeps the set it
-    // started with rather than re-downloading a hundred images.
-    // Shopify assets/ is flat and asset_url returns hashed CDN paths, so the
-    // frame URLs are emitted by Liquid as JSON rather than built by index.
-    var readList = function (sel) {
-      var el = section.querySelector(sel);
-      if (!el) { return []; }
-      try { return JSON.parse(el.textContent) || []; } catch (e) { return []; }
-    };
-    var framesDesktop = readList("[data-scroll-video-frames]");
-    var framesMobile = readList("[data-scroll-video-frames-mobile]");
-    var useMobile = framesMobile.length && window.matchMedia("(max-width: 899px)").matches;
-    var urls = useMobile ? framesMobile : framesDesktop;
-    var count = urls.length;
-    var pad = parseInt(section.getAttribute("data-frame-pad"), 10) || 3;
-    var ext = section.getAttribute("data-frame-ext") || "webp";
-    if (!count) { return; }
-
-    var loadingEl = section.querySelector("[data-scroll-video-loading]");
-    var progressEl = section.querySelector("[data-scroll-video-progress]");
-
-    var frames = new Array(count);
-    var ready = new Array(count);
-    var loaded = 0;
-    var currentIndex = -1;
-
-    var srcFor = function (i) { return urls[i]; };
-
-    // Nearest already-decoded frame, so an un-preloaded index shows the closest
-    // real frame instead of blanking the canvas.
-    var nearestReady = function (i) {
-      if (ready[i]) { return i; }
-      for (var d = 1; d < count; d++) {
-        if (i - d >= 0 && ready[i - d]) { return i - d; }
-        if (i + d < count && ready[i + d]) { return i + d; }
-      }
-      return -1;
-    };
-
-    var align = section.getAttribute("data-frame-align") || "top";
-    var pan = section.getAttribute("data-frame-pan") !== "false";
-    // Punch-in, per breakpoint. 1 = plain cover.
-    var zoom = parseFloat(
-      useMobile ? (section.getAttribute("data-frame-zoom-mobile") || "1")
-                : (section.getAttribute("data-frame-zoom") || "1")) || 1;
-    var frameW = 0; // native source width, learned from the first decoded frame
-
-    var sizeCanvas = function () {
-      var w = canvas.clientWidth || section.clientWidth;
-      var h = canvas.clientHeight || window.innerHeight;
-      // The frames are already being upscaled to fill the viewport width, so a
-      // 2x backing store would only magnify that upscale — it cannot invent
-      // detail the source does not have, and costs 4x the memory per frame.
-      // Cap the backing store at the source width; the browser's own scaling of
-      // the canvas element up to CSS size is smoother than drawImage's.
-      var dpr = window.devicePixelRatio || 1;
-      var maxW = frameW ? Math.max(frameW, w) : w * Math.min(dpr, 2);
-      var scale = Math.min(dpr, maxW / Math.max(w, 1), 2);
-      canvas.width = Math.round(w * scale);
-      canvas.height = Math.round(h * scale);
-      ctx.imageSmoothingEnabled = true;
-      // "high" runs an expensive resampler on every paint. While scrubbing that
-      // cost lands on each scroll frame, and it cannot recover detail the 720px
-      // source never had — so the quality gain is invisible and the jank is not.
-      ctx.imageSmoothingQuality = "low";
-    };
-
-    // Scroll drives two things at once from a single progress value:
-    //   1. which frame plays (scrubbing), and
-    //   2. how far down the frame we are looking (panning).
-    // The frame fills the viewport width, so a portrait source overflows
-    // vertically — that overflow IS the pan distance. Section one sees the top
-    // of the composition, section three the bottom, which is what makes a pinned
-    // canvas read as a background travelling with the page.
-    var lastProgress = 0;
-
-    var draw = function (i, progress) {
-      var idx = nearestReady(i);
-      if (idx === -1) { return; }
-      if (typeof progress === "number") { lastProgress = progress; }
-      var img = frames[idx];
-      var cw = canvas.width, ch = canvas.height;
-      if (!cw || !ch) { return; }
-      var nw = img.naturalWidth, nh = img.naturalHeight;
-
-      // Draw only the slice of the source that is on screen — drawing the whole
-      // frame and letting the canvas clip wastes most of the scaling work.
-      //
-      // Cover means cropping whichever axis overflows. Fitting to width alone
-      // and clamping the slice height stretched the image whenever the frame
-      // was shorter than the viewport needed (portrait phones, landscape
-      // frames), because a short source got drawn into a tall canvas.
-      var targetAspect = cw / ch;
-      var srcAspect = nw / nh;
-      var sw, sh;
-
-      if (srcAspect > targetAspect) {
-        sw = nh * targetAspect; sh = nh;   // source wider → crop the sides
-      } else {
-        sw = nw; sh = nw / targetAspect;   // source taller → crop top/bottom
-      }
-
-      // Zoom shrinks the sampled rectangle, so less of the frame fills the same
-      // canvas — a punch-in. Clamped so it can never sample outside the image.
-      if (zoom > 1) {
-        sw = Math.min(nw, sw / zoom);
-        sh = Math.min(nh, sh / zoom);
-      }
-
-      var sx = (nw - sw) / 2;              // always centred horizontally
-      var maxSy = Math.max(0, nh - sh);    // vertical slack is what the pan uses
-      var sy;
-      if (pan && maxSy > 0) { sy = maxSy * lastProgress; }
-      else if (align === "bottom") { sy = maxSy; }
-      else if (align === "center") { sy = maxSy / 2; }
-      else { sy = 0; }
-
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
-      currentIndex = idx;
-    };
-
-    // ScrollTrigger can fire several updates per animation frame under Lenis;
-    // painting on each one is wasted work. Coalesce to one draw per frame.
-    var pendingIndex = -1;
-    var pendingProgress = 0;
-    var rafId = 0;
-    var scheduleDraw = function (i, progress) {
-      pendingIndex = i;
-      pendingProgress = progress;
-      if (rafId) { return; }
-      rafId = requestAnimationFrame(function () {
-        rafId = 0;
-        draw(pendingIndex, pendingProgress);
-      });
-    };
-
-    var setProgressBar = function () {
-      if (progressEl) { progressEl.style.width = Math.round((loaded / count) * 100) + "%"; }
-      if (loaded >= count && loadingEl) { loadingEl.hidden = true; }
-    };
-
-    // Load order matters more than load speed. Fetching 1→N strictly in order
-    // means scrolling before the tail arrives snaps between distant frames —
-    // which reads as glitching until everything settles. Instead do coarse
-    // passes: every 16th frame, then every 8th, 4th, 2nd, then the rest. The
-    // whole scroll range is covered almost immediately at low temporal
-    // resolution (nearestReady fills the gaps) and sharpens as passes complete.
-    var order = (function () {
-      var seen = new Array(count);
-      var list = [];
-      for (var stride = 16; stride >= 1; stride = stride >> 1) {
-        for (var i = 0; i < count; i += stride) {
-          if (!seen[i]) { seen[i] = true; list.push(i); }
-        }
-      }
-      return list;
-    })();
-
-    var next = 0;
-    // Browsers cap parallel requests per host (~6 on HTTP/1.1, far more on
-    // HTTP/2 — which is what Shopify's CDN serves).
-    var CONCURRENCY = 8;
-    var pump = function () {
-      while (next < order.length && pumpActive < CONCURRENCY) {
-        (function (i) {
-          pumpActive++;
-          var img = new Image();
-          img.decoding = "async";
-          // Decode up front. Without this the first paint of each frame decodes
-          // synchronously mid-scroll, which is exactly when it hurts.
-          img.onload = (function (image, done) {
-            return function () {
-              if (image.decode) { image.decode().then(done).catch(done); }
-              else { done(); }
-            };
-          })(img, function () {
-            ready[i] = true; frames[i] = img; loaded++; pumpActive--;
-            // First frame tells us the source resolution — re-size the backing
-            // store now that we know what we are actually scaling from.
-            if (!frameW) { frameW = img.naturalWidth; sizeCanvas(); }
-            setProgressBar();
-            if (currentIndex === -1 || i === currentIndex) { draw(currentIndex === -1 ? 0 : currentIndex); }
-            pump();
+  // Footer newsletter (Join SASSi). Submits in place so the shopper stays put and
+  // sees the result — a normal post reloads the page (preloader and all) and
+  // lands at the top, far from the thank-you. Shopify answers a good signup by
+  // redirecting to ?customer_posted=true; a bad one re-renders the form with
+  // errors, which we lift out of the returned page. If Shopify wants its spam
+  // challenge (/challenge), hand over to a real submit so the shopper can pass
+  // it. The footer is outside <main>, so this binds once.
+  function initNewsletter() {
+    var form = document.getElementById("footer-newsletter");
+    if (!form || form.hasAttribute("data-bound")) { return; }
+    form.setAttribute("data-bound", "");
+    var success = document.querySelector("[data-newsletter-success]");
+    form.addEventListener("submit", function (e) {
+      var email = form.querySelector("[name='contact[email]']");
+      if (!email) { return; }
+      e.preventDefault();
+      var btn = form.querySelector("button[type='submit']");
+      var errorEl = form.querySelector("[data-newsletter-error]");
+      var showError = function (msg) {
+        if (!errorEl) { return; }
+        errorEl.textContent = msg;
+        errorEl.hidden = false;
+      };
+      if (btn) { btn.disabled = true; }
+      if (errorEl) { errorEl.hidden = true; }
+      fetch(form.action, { method: "POST", body: new FormData(form) })
+        .then(function (res) {
+          if (res.url.indexOf("/challenge") !== -1) { form.submit(); return null; }
+          if (/customer_posted=true/.test(res.url)) {
+            form.hidden = true;
+            if (success) { success.hidden = false; }
+            return null;
+          }
+          return res.text().then(function (html) {
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var err = doc.querySelector("#footer-newsletter [data-newsletter-error]");
+            var msg = err ? err.textContent.trim() : "";
+            showError(msg || "Something went wrong. Please check your email and try again.");
           });
-          img.onerror = function () { pumpActive--; loaded++; setProgressBar(); pump(); };
-          img.src = srcFor(i);
-        })(order[next]); // frame index from the interleaved order, not the cursor
-        next++;
-      }
+        })
+        .catch(function () { form.submit(); })
+        .then(function () { if (btn) { btn.disabled = false; } });
+    });
+  }
+
+  // Back-to-top button. It lives in the layout, outside <main>, so it survives
+  // page swaps — bind once. Shows after about a screen of scrolling; Lenis drives
+  // the window's own scroll, so a plain scroll listener sees its movement too.
+  function initBackToTop() {
+    var btn = document.querySelector("[data-back-to-top]");
+    if (!btn || btn.hasAttribute("data-bound")) { return; }
+    btn.setAttribute("data-bound", "");
+    var shown = false;
+    var update = function () {
+      var show = window.scrollY > window.innerHeight * 0.8;
+      if (show === shown) { return; }
+      shown = show;
+      btn.classList.toggle("is-visible", show);
+      btn.tabIndex = show ? 0 : -1;
     };
-    var pumpActive = 0;
-
-    sizeCanvas();
-    pump();
-
-    window.addEventListener("resize", function () {
-      sizeCanvas();
-      draw(currentIndex < 0 ? 0 : currentIndex, lastProgress);
+    window.addEventListener("scroll", update, { passive: true });
+    btn.addEventListener("click", function () {
+      if (lenis) { lenis.scrollTo(0, { duration: 1.2 }); }
+      else { window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" }); }
     });
-
-    if (!motionOn) {
-      // No scrubbing without motion — the section collapses to one viewport in
-      // CSS, so just paint the opening frame when it arrives.
-      return;
-    }
-
-    ScrollTrigger.create({
-      trigger: section,
-      start: "top top",
-      end: "bottom bottom",
-      onUpdate: function (self) {
-        var i = Math.min(count - 1, Math.max(0, Math.round(self.progress * (count - 1))));
-        // Every update matters — the pan moves continuously even while the same
-        // frame shows — but scheduleDraw collapses them to one paint per frame.
-        scheduleDraw(i, self.progress);
-      }
-    });
+    update();
   }
 
   function initFeatures() {
     initQty();
     initGallery();
     initProductForm(); // Shopify variant-aware swatches (replaces the cosmetic initSwatches)
+    initMarketplaceBuy();
     initShop();
     initHeroCarousel();
     initContactSuccess();
@@ -1509,10 +1419,11 @@
     initPdpBack();
     initPdpDescriptionDefault();
     initAccordions();
+    initBackToTop();
+    initNewsletter();
     initCartDrawer();
     initPdpScroll();
     initRecommendations();
-    initScrollVideo();
   }
 
   /* ===================== Motion layer ===================== */
@@ -1831,6 +1742,59 @@
       if (affCta) { affTl.fromTo(affCta, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 0.6); }
     }
 
+    // 404 — the outlined digits rise in one after another, then the copy
+    // follows. Start states are set now; it plays once the cover lifts.
+    var nfDigits = gsap.utils.toArray(".notfound__digit");
+    var nfParts = gsap.utils.toArray("[data-notfound-part]");
+    if (nfDigits.length || nfParts.length) {
+      gsap.set(nfDigits, { opacity: 0, yPercent: 30 });
+      gsap.set(nfParts, { opacity: 0, y: 24 });
+      pageRevealHooks.push(function () {
+        var tl = gsap.timeline();
+        tl.to(nfDigits, { opacity: 1, yPercent: 0, duration: 1.1, ease: "power3.out", stagger: 0.12 }, 0.1)
+          .to(nfParts, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 }, 0.35);
+      });
+    }
+
+    // About page panels — each panel's copy staggers in as it enters: eyebrow
+    // lifts, the heading masks up line by line (same as the affiliate heading),
+    // then the body copy. Everything is set to its start state now, but the
+    // triggers are created once the cover lifts, so the first panel (already on
+    // screen at load) plays where it can be seen rather than behind the cover.
+    var ipOverlays = gsap.utils.toArray(".image-panels__overlay");
+    if (ipOverlays.length) {
+      var ipParts = ipOverlays.map(function (overlay) {
+        var heading = overlay.querySelector(".image-panels__heading");
+        var lines = [];
+        if (heading) {
+          // Re-split from the original markup if this runs again on the same DOM.
+          if (heading.dataset.srcHtml) { heading.innerHTML = heading.dataset.srcHtml; }
+          else { heading.dataset.srcHtml = heading.innerHTML; }
+          lines = splitHeadingLines(heading);
+          heading.style.visibility = "visible"; // lines start masked instead
+          gsap.set(lines, { yPercent: 115 });
+        }
+        var eyebrow = overlay.querySelector(".image-panels__eyebrow");
+        var copy = overlay.querySelector(".image-panels__copy");
+        var fades = [eyebrow, copy].filter(Boolean);
+        if (fades.length) { gsap.set(fades, { opacity: 0, y: 20 }); }
+        return { overlay: overlay, eyebrow: eyebrow, lines: lines, copy: copy };
+      });
+      pageRevealHooks.push(function () {
+        var build = function () {
+          ipParts.forEach(function (p) {
+            var tl = gsap.timeline({ scrollTrigger: { trigger: p.overlay, start: "top 80%" } });
+            if (p.eyebrow) { tl.to(p.eyebrow, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0); }
+            if (p.lines.length) { tl.to(p.lines, { yPercent: 0, duration: 0.8, stagger: 0.12, ease: "power3.out" }, p.eyebrow ? 0.15 : 0); }
+            if (p.copy) { tl.to(p.copy, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, "-=0.4"); }
+          });
+        };
+        // Add to this page's motion context so a page swap reverts the triggers.
+        // (Hooks are reset per build, so mainCtx here is always this page's.)
+        if (mainCtx) { mainCtx.add(build); } else { build(); }
+      });
+    }
+
     // Lifestyle tiles — ScrollTrigger.batch groups the tiles that enter the
     // viewport together and staggers each batch in. Works for the 2-col (mobile)
     // and 3-col (desktop) grids alike, no per-row math. Reveals once.
@@ -2045,9 +2009,21 @@
     // inline scripts differ and still run.
     var ranInline = Object.create(null);
 
+    // Only real JavaScript needs reviving. Data blocks (type="application/json",
+    // ld+json, importmap…) are never executed, they are read by our own code, and
+    // the dedupe below would DELETE a repeat of one: revisiting a product whose
+    // variant JSON matched an earlier visit stripped it from the page, so
+    // initProductForm found nothing and the swatches went dead until a reload.
+    var isExecutable = function (el) {
+      var t = (el.getAttribute("type") || "").trim().toLowerCase();
+      return !t || t === "module" || t === "text/javascript" || t === "application/javascript" ||
+        t === "text/ecmascript" || t === "application/ecmascript";
+    };
+
     var reviveScripts = function (root) {
       var seenJs = seenAssets("script[src]", "src");
       [].forEach.call(root.querySelectorAll("script"), function (old) {
+        if (!isExecutable(old)) { return; }
         var srcAttr = old.getAttribute("src");
         if (srcAttr) {
           var abs = absUrl(srcAttr);

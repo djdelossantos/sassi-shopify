@@ -11,27 +11,115 @@
   endif
 -%}
 <section class="pdp" data-section="pdp" data-section-theme="light">
-  {%- comment -%} Gallery: desktop stacks all media past the sticky info; mobile shows
-    the main image + a tappable thumbnail strip (see theme.js initGallery). {%- endcomment -%}
+  {%- comment -%}
+    Colour filtering: each photo belongs to one colour or to all of them.
+    - Alt text naming a colour ("Black", or "Black - side view": only the part
+      before " - " or " | " counts) ties the photo to that colour.
+    - Otherwise a photo set as a colour's variant image belongs to that colour.
+    - Anything else is shared and shows for every colour.
+    Only the selected colour's photos (plus shared ones) render visible; theme.js
+    (initGallery → pdpGallery.filter) re-filters when another swatch is picked.
+    If a colour has no photos of its own, everything shows rather than nothing.
+  {%- endcomment -%}
+  {%- liquid
+    assign color_index = -1
+    for option in product.options_with_values
+      assign opt_name = option.name | downcase
+      if opt_name contains 'color' or opt_name contains 'colour'
+        assign color_index = forloop.index0
+        assign color_values = ''
+        for value in option.values
+          assign vname = value.name | default: value | strip | downcase
+          assign color_values = color_values | append: '|' | append: vname
+        endfor
+        assign color_values = color_values | append: '|'
+        break
+      endif
+    endfor
+
+    assign media_colors = ''
+    assign selected_color = ''
+    if color_index >= 0
+      assign selected_color = current_variant.options[color_index] | strip | downcase
+      for media in product.media
+        assign tag = media.alt | split: ' - ' | first | split: ' | ' | first | strip | downcase
+        assign needle = '|' | append: tag | append: '|'
+        assign mcolor = ''
+        if tag != blank and color_values contains needle
+          assign mcolor = tag
+        else
+          for v in product.variants
+            if v.featured_media.id == media.id
+              assign mcolor = v.options[color_index] | strip | downcase
+              break
+            endif
+          endfor
+        endif
+        assign media_colors = media_colors | append: mcolor | append: '|'
+      endfor
+    endif
+    assign media_colors = media_colors | split: '|'
+
+    assign own_count = 0
+    for media in product.media
+      if media_colors[forloop.index0] == selected_color and selected_color != blank
+        assign own_count = own_count | plus: 1
+      endif
+    endfor
+    if own_count == 0
+      assign selected_color = ''
+    endif
+
+    assign visible_count = 0
+    assign first_visible = -1
+    for media in product.media
+      assign mc = media_colors[forloop.index0]
+      if selected_color == blank or mc == blank or mc == selected_color
+        assign visible_count = visible_count | plus: 1
+        if first_visible < 0
+          assign first_visible = forloop.index0
+        endif
+      endif
+    endfor
+  -%}
+  {%- comment -%} Gallery: desktop stacks the visible media past the sticky info; mobile
+    shows one at a time + a tappable thumbnail strip (see theme.js initGallery). {%- endcomment -%}
   <div class="pdp__gallery" data-gallery data-media-count="{{ product.media.size }}">
-    <div class="pdp__media">
+    <div class="pdp__media" data-gallery-stage>
       {%- for media in product.media -%}
-        <div class="pdp__media-item{% if forloop.first %} is-main{% endif %}"{% if forloop.first %} data-gallery-main{% endif %}>
-          <img src="{{ media | image_url: width: 1400 }}" alt="{{ media.alt | default: product.title | escape }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
+        {%- liquid
+          assign mc = media_colors[forloop.index0]
+          assign shown = false
+          if selected_color == blank or mc == blank or mc == selected_color
+            assign shown = true
+          endif
+          # Empty alt text comes back as the product title, so skip that case.
+          if media.alt != blank and media.alt != product.title
+            assign img_alt = product.title | append: ' — ' | append: media.alt
+          else
+            assign img_alt = product.title
+          endif
+        -%}
+        <div class="pdp__media-item{% if forloop.index0 == first_visible %} is-main{% endif %}{% unless shown %} is-filtered-out{% endunless %}" data-media-color="{{ mc | escape }}">
+          <img src="{{ media | image_url: width: 1400 }}" alt="{{ img_alt | escape }}"{% unless forloop.index0 == first_visible %} loading="lazy"{% endunless %}>
         </div>
       {%- else -%}
-        <div class="pdp__media-item is-main" data-gallery-main>{{ 'product-1' | placeholder_svg_tag: 'pdp__placeholder' }}</div>
+        <div class="pdp__media-item is-main">{{ 'product-1' | placeholder_svg_tag: 'pdp__placeholder' }}</div>
       {%- endfor -%}
       {%- if product.media.size > 1 -%}
-        <div class="pdp__dots" data-gallery-dots aria-hidden="true">
-          {%- for media in product.media -%}<span class="pdp__dot{% if forloop.first %} is-active{% endif %}"></span>{%- endfor -%}
+        <div class="pdp__dots{% if visible_count < 2 %} is-filtered-out{% endif %}" data-gallery-dots aria-hidden="true">
+          {%- for media in product.media -%}
+            {%- assign mc = media_colors[forloop.index0] -%}
+            <span class="pdp__dot{% if forloop.index0 == first_visible %} is-active{% endif %}{% unless selected_color == blank or mc == blank or mc == selected_color %} is-filtered-out{% endunless %}"></span>
+          {%- endfor -%}
         </div>
       {%- endif -%}
     </div>
     {%- if product.media.size > 1 -%}
-      <div class="pdp__thumbs" data-gallery-thumbs>
+      <div class="pdp__thumbs{% if visible_count < 2 %} is-filtered-out{% endif %}" data-gallery-thumbs>
         {%- for media in product.media -%}
-          <button class="pdp__thumb{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="View image {{ forloop.index }}"><img src="{{ media | image_url: width: 200 }}" alt="" loading="lazy"></button>
+          {%- assign mc = media_colors[forloop.index0] -%}
+          <button class="pdp__thumb{% if forloop.index0 == first_visible %} is-active{% endif %}{% unless selected_color == blank or mc == blank or mc == selected_color %} is-filtered-out{% endunless %}" aria-label="View image {{ forloop.index }}"><img src="{{ media | image_url: width: 200 }}" alt="" loading="lazy"></button>
         {%- endfor -%}
       </div>
     {%- endif -%}
@@ -93,6 +181,9 @@
       {%- endfor -%}
     {%- endunless -%}
 
+    {%- if settings.marketplace_mode -%}
+      {% render 'marketplace-buy', product: product %}
+    {%- else -%}
     {%- form 'product', product, class: 'pdp__form' -%}
       <div class="pdp__buy">
         <div class="qty" data-qty>
@@ -108,6 +199,7 @@
         </button>
       </div>
     {%- endform -%}
+    {%- endif -%}
 
     {%- if product.description != blank or section.blocks.size > 0 -%}
       <div class="pdp__accordions">

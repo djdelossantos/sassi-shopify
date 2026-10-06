@@ -1,3 +1,13 @@
+{%- liquid
+  # A Home link first, for shoppers who don't know the logo goes home. Skipped
+  # if the menu already links to the homepage, so it never shows twice.
+  assign show_home = section.settings.show_home
+  for link in linklists[section.settings.menu].links
+    if link.url == routes.root_url
+      assign show_home = false
+    endif
+  endfor
+-%}
 <header class="site-header" data-header>
   <div class="site-header__inner">
     <div class="site-header__left">
@@ -6,6 +16,7 @@
         <span class="site-header__burger-close">{% render 'icon', name: 'close' %}</span>
       </button>
       <nav class="site-header__nav" aria-label="Main">
+        {%- if show_home -%}<a href="{{ routes.root_url }}">Home</a>{%- endif -%}
         {%- for link in linklists[section.settings.menu].links -%}
           <a href="{{ link.url }}">{{ link.title }}</a>
         {%- endfor -%}
@@ -22,10 +33,13 @@
       {%- if shop.customer_accounts_enabled -%}
         <a href="{{ routes.account_url }}" aria-label="Account" class="site-header__account">{% render 'icon', name: 'account' %}</a>
       {%- endif -%}
+      {%- comment -%} No bag while shoppers are sent to the marketplaces instead. {%- endcomment -%}
+      {%- unless settings.marketplace_mode -%}
       <a class="site-header__bag" href="{{ routes.cart_url }}" aria-label="Bag ({{ cart.item_count }})" data-cart-count>
         {% render 'icon', name: 'bag' %}
         <span class="site-header__bag-count" data-cart-count-value{% if cart.item_count == 0 %} hidden{% endif %}>{{ cart.item_count }}</span>
       </a>
+      {%- endunless -%}
     </div>
   </div>
   {%- comment -%} Expanding search panel — collapsed to zero height until the
@@ -46,6 +60,7 @@
   </div>
 
   <nav class="site-header__drawer" id="mobile-menu" aria-label="Mobile">
+    {%- if show_home -%}<a href="{{ routes.root_url }}">Home</a>{%- endif -%}
     {%- for link in linklists[section.settings.menu].links -%}
       <a href="{{ link.url }}">{{ link.title }}</a>
     {%- endfor -%}
@@ -65,6 +80,13 @@
       "id": "menu",
       "label": "Menu",
       "default": "main-menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_home",
+      "label": "Add a Home link before the menu",
+      "info": "Left out automatically if the menu already links to the homepage.",
+      "default": true
     }
   ]
 }

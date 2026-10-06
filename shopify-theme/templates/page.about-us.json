@@ -1,7 +1,7 @@
 {
   "sections": {
-    "scroll-video": {
-      "type": "scroll-video",
+    "image-panels": {
+      "type": "image-panels",
       "blocks": {
         "panel-1": {
           "type": "panel",
@@ -26,17 +26,12 @@
           }
         }
       },
-      "block_order": ["panel-1", "panel-2", "panel-3"],
+      "block_order": [
+        "panel-1",
+        "panel-2",
+        "panel-3"
+      ],
       "settings": {
-        "frame_prefix": "travel-hero",
-        "frame_count": 200,
-        "frame_count_mobile": 100,
-        "align": "top",
-        "pan": false,
-        "zoom": 1,
-        "zoom_mobile": 1.2,
-        "dim_pct": 30,
-        "noise_pct": 6,
         "text_align": "left"
       }
     },
@@ -47,5 +42,8 @@
       }
     }
   },
-  "order": ["scroll-video", "featured"]
+  "order": [
+    "image-panels",
+    "featured"
+  ]
 }

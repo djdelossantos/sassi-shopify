@@ -1,0 +1,84 @@
+{%- comment -%}
+  Static tall background — one image stretched behind every panel, scrolling
+  with the page like a poster. Each panel is at least 100svh, so the section is
+  as tall as its panels and the image covers the whole run.
+
+  The image already carries its own darkening and grain, so there is no dim or
+  noise layer here. Falls back to the bundled about-bg.webp until one is picked.
+{%- endcomment -%}
+{%- liquid
+  if section.settings.image != blank
+    assign bg_src = section.settings.image | image_url: width: 2880
+  else
+    assign bg_src = 'about-bg.webp' | asset_url
+  endif
+-%}
+
+<section class="image-panels"
+         data-section="image-panels"
+         data-section-theme="dark"
+         {{ section.shopify_attributes }}>
+  <img class="image-panels__bg" src="{{ bg_src }}" alt="" fetchpriority="high">
+
+  <div class="image-panels__panels{% if section.settings.text_align == 'left' %} image-panels__panels--left{% endif %}">
+    {%- for block in section.blocks -%}
+      <div class="image-panels__panel" {{ block.shopify_attributes }}>
+        <div class="image-panels__overlay">
+          {%- if block.settings.eyebrow != blank -%}
+            <p class="image-panels__eyebrow">{{ block.settings.eyebrow }}</p>
+          {%- endif -%}
+          {%- if block.settings.heading != blank -%}
+            <h2 class="image-panels__heading{% if block.settings.tone == 'brand' %} text-brand{% endif %}">{{ block.settings.heading }}</h2>
+          {%- endif -%}
+          {%- if block.settings.copy != blank -%}
+            <p class="image-panels__copy">{{ block.settings.copy }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Image panels",
+  "settings": [
+    {
+      "type": "image_picker", "id": "image", "label": "Background image",
+      "info": "One tall image behind all panels, e.g. 2880 × 4320. Bake any darkening into the image itself."
+    },
+    {
+      "type": "select", "id": "text_align", "label": "Text alignment", "default": "left",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Centre" }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "type": "panel",
+      "name": "Panel",
+      "settings": [
+        { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+        { "type": "textarea", "id": "heading", "label": "Heading" },
+        { "type": "textarea", "id": "copy", "label": "Body copy" },
+        {
+          "type": "select", "id": "tone", "label": "Heading colour", "default": "light",
+          "options": [
+            { "value": "light", "label": "White" },
+            { "value": "brand", "label": "SASSi red" }
+          ]
+        }
+      ]
+    }
+  ],
+  "max_blocks": 5,
+  "presets": [
+    {
+      "name": "Image panels",
+      "blocks": [{ "type": "panel" }, { "type": "panel" }, { "type": "panel" }]
+    }
+  ]
+}
+{% endschema %}

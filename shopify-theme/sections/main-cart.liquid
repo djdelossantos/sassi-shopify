@@ -4,7 +4,12 @@
   The markup below still renders for anyone without JS — without it this page
   would be a dead end for them, since the drawer needs JS to exist at all.
 {%- endcomment -%}
+{%- comment -%} With marketplace buying on there is no drawer, so just go home. {%- endcomment -%}
+{%- if settings.marketplace_mode -%}
+<script>window.location.replace({{ routes.root_url | json }});</script>
+{%- else -%}
 <script>window.location.replace({{ routes.root_url | append: '#cart' | json }});</script>
+{%- endif -%}
 
 <section class="cart" data-section="cart" data-section-theme="light">
   <div class="cart__inner">

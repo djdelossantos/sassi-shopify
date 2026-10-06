@@ -30,5 +30,49 @@
         "label": "TikTok URL"
       }
     ]
+  },
+  {
+    "name": "Marketplace buying",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "While checkout isn't set up, replace add to cart with a Buy Now button that links to the product on Shopee, Lazada and TikTok Shop. Turning this off brings back the bag, cart drawer and checkout."
+      },
+      {
+        "type": "checkbox",
+        "id": "marketplace_mode",
+        "label": "Send shoppers to marketplaces",
+        "default": false
+      },
+      {
+        "type": "text",
+        "id": "marketplace_button_label",
+        "label": "Button label",
+        "default": "Buy Now"
+      },
+      {
+        "type": "header",
+        "content": "Fallback shop links"
+      },
+      {
+        "type": "paragraph",
+        "content": "Each product's own links go in its Shopee / Lazada / TikTok Shop URL fields. These store links are used for any product left blank."
+      },
+      {
+        "type": "url",
+        "id": "marketplace_shopee_url",
+        "label": "Shopee shop"
+      },
+      {
+        "type": "url",
+        "id": "marketplace_lazada_url",
+        "label": "Lazada shop"
+      },
+      {
+        "type": "url",
+        "id": "marketplace_tiktok_url",
+        "label": "TikTok Shop"
+      }
+    ]
   }
 ]

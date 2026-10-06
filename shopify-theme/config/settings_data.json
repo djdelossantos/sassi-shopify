@@ -1,29 +1,75 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "current": {
+    "favicon": "shopify://shop_images/Sassi-Square-Logo-400x400.png",
+    "marketplace_mode": true,
+    "marketplace_shopee_url": "https://shopee.ph/sassirabbit",
+    "marketplace_lazada_url": "https://www.lazada.com.ph/shop/sassi-rabbit/",
+    "marketplace_tiktok_url": "https://vt.tiktok.com/ZSbNYwyna/?page=TikTokShop",
     "sections": {
       "footer": {
         "type": "footer",
         "blocks": {
           "about": {
             "type": "menu_column",
-            "settings": { "heading": "About", "menu": "footer-about" }
+            "settings": {
+              "heading": "About",
+              "menu": "footer-about"
+            }
           },
           "shop": {
             "type": "menu_column",
-            "settings": { "heading": "Shop", "menu": "footer-shop" }
+            "settings": {
+              "heading": "Shop",
+              "menu": "footer-shop"
+            }
           },
           "support": {
             "type": "menu_column",
-            "settings": { "heading": "Support", "menu": "footer-support" }
+            "settings": {
+              "heading": "Support",
+              "menu": "footer-support"
+            }
           },
           "socials": {
             "type": "menu_column",
-            "settings": { "heading": "Socials", "menu": "footer-socials" }
+            "settings": {
+              "heading": "Socials",
+              "menu": "footer-socials"
+            }
           }
         },
-        "block_order": ["about", "shop", "support", "socials"],
-        "settings": {}
+        "block_order": [
+          "about",
+          "shop",
+          "support",
+          "socials"
+        ],
+        "settings": {
+          "join_title": "Join SASSi",
+          "join_copy": "Never miss a chance to know the next drop, and exclusive discounts at SASSi.",
+          "join_placeholder": "Email for the next drop",
+          "join_button": "Notify Me",
+          "closer_text": "Designed for You to",
+          "closer_accent": "Carry On."
+        }
+      },
+      "header": {
+        "type": "header",
+        "settings": {
+          "menu": "main-menu",
+          "show_home": true
+        }
       }
-    }
+    },
+    "content_for_index": []
   }
 }

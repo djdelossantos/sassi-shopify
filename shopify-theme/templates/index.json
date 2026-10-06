@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "intro": {
@@ -15,11 +24,12 @@
         "headline": "Carry On",
         "headline_accent": "",
         "hero_video": "shopify://files/videos/Sassi-Website-Hero-Video.webm",
+        "brand_image": "shopify://shop_images/Brand-Intro_banner_2x_44a54a7d-93e2-4521-a6f0-4ee21a5be2a2.png",
         "brand_heading": "A reliable product for the people",
         "brand_heading_accent": "we rely on.",
         "brand_body": "Bags for the shift, the commute, and everything you haul in between. No fuss, no flex, gear that shows up every day, the way you do.",
         "brand_button_label": "Learn More",
-        "brand_button_link": ""
+        "brand_button_link": "shopify://pages/about-us"
       }
     },
     "categories": {
@@ -28,28 +38,31 @@
         "backpacks": {
           "type": "category",
           "settings": {
+            "image": "shopify://shop_images/Backpacks-category_img_2x_80445ddc-655e-4fe6-b432-8a99dbc33f4d.png",
             "title": "Backpacks",
             "copy": "Built for the daily grind. Protective and weather-ready.",
-            "link": "backpacks",
-            "image": "shopify://shop_images/Backpacks-category_img_2x_b7e68d33-b2bc-4378-b31e-a9d5b87226e2.png"
+            "product_type": "Backpacks",
+            "link": "backpacks"
           }
         },
         "totes": {
           "type": "category",
           "settings": {
+            "image": "shopify://shop_images/Totes-category_img_2x_9bc0fa83-2a2a-4992-bba1-85ffc029feee.png",
             "title": "Totes",
             "copy": "Everyday utility, simplified. Spacious storage for your routine.",
-            "link": "tote",
-            "image": "shopify://shop_images/Totes-category_img_2x_9bc0fa83-2a2a-4992-bba1-85ffc029feee.png"
+            "product_type": "Totes",
+            "link": "tote"
           }
         },
         "handbags": {
           "type": "category",
           "settings": {
+            "image": "shopify://shop_images/Handbags-category_img_2x_ca8cc037-5579-4cb2-b0a6-88f32f2c5507.png",
             "title": "Handbags",
             "copy": "Compact and organized. Quick-access pockets for daily essentials.",
-            "link": "handbags",
-            "image": "shopify://shop_images/Handbags-category_img_2x_ca8cc037-5579-4cb2-b0a6-88f32f2c5507.png"
+            "product_type": "Handbags",
+            "link": "handbags"
           }
         }
       },
@@ -68,14 +81,15 @@
         "work": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Work-series_img_2x_c5972368-0889-4c4b-9188-b9a65b88f424.png",
             "title": "Work",
-            "copy": "Streamlined style for the daily grind.\nKeeps your work essentials perfectly arranged.",
-            "image": "shopify://shop_images/Work-series_img_2x_c5972368-0889-4c4b-9188-b9a65b88f424.png"
+            "copy": "Streamlined style for the daily grind.\nKeeps your work essentials perfectly arranged."
           }
         },
         "tech": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Tech-series_img_2x_03f240e2-9268-46c7-a0da-7b439ada4aba.png",
             "title": "Tech",
             "copy": "Secure padding for your mobile office.\nGuards laptops and cables from bumps."
           }
@@ -83,6 +97,7 @@
         "active": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Active-series_img_2x_899e9393-2399-4ab2-81d1-dbb058fe9497.png",
             "title": "Active",
             "copy": "Lightweight resilience for life in motion.\nTransitions easily from workouts to city streets."
           }
@@ -90,6 +105,7 @@
         "utility": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Utility-series_img_2x_05ad7cac-0714-4385-8a09-9fbbbc6c50ad.png",
             "title": "Utility",
             "copy": "Heavy-duty storage that works harder.\nReinforced details handle your toughest loads."
           }
@@ -97,6 +113,7 @@
         "travel": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Travel-series_img_2x_a4a67aa2-fac8-4996-9b2e-bd1a9ad0b4d3.png",
             "title": "Travel",
             "copy": "Travel-ready design for smooth transit.\nIncludes intuitive layouts for hassle-free miles."
           }
@@ -104,9 +121,9 @@
         "lifestyle": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/Lifestyle-series_img_2x_ba3e395d-a9ec-4c7e-8a26-bfc3ad9abbb5.png",
             "title": "Lifestyle",
-            "copy": "Effortless versatility for your daily routine.\nAdapts to your changing schedule instantly.",
-            "image": "shopify://shop_images/Lifestyle-series_img_2x_ba3e395d-a9ec-4c7e-8a26-bfc3ad9abbb5.png"
+            "copy": "Effortless versatility for your daily routine.\nAdapts to your changing schedule instantly."
           }
         }
       },
@@ -125,8 +142,8 @@
       "settings": {
         "heading": "Black Series",
         "sub": "Blacked out. Built up.",
-        "button_label": "Learn More",
-        "button_link": ""
+        "button_label": "Shop Now",
+        "button_link": "/collections/all?filter.v.option.color=Black"
       }
     },
     "affiliate": {
@@ -139,7 +156,7 @@
         "sub_line1": "Partner with SASSi and represent the bags you already carry.",
         "sub_line2": "Earn on every referral as an affiliate.",
         "button_label": "Become an Affiliate",
-        "button_link": ""
+        "button_link": "shopify://pages/affiliate"
       }
     },
     "featured": {
@@ -150,7 +167,7 @@
         "limit": 4,
         "anchor": "new-arrivals",
         "link_label": "Shop now →",
-        "link_url": ""
+        "link_url": "shopify://collections/new-arrivals"
       }
     }
   },

@@ -1,0 +1,14 @@
+{%- comment -%}
+  One Black Series bag. Params: image (picked image or blank), fallback (bundled
+  asset name), w (fallback width; every bundled bag is 2300px tall, at one shared scale), slot
+  (layering/overlap class), alt.
+  width/height always come from the real file, so the browser keeps the photo's
+  own proportions instead of forcing it into a fixed slot shape.
+{%- endcomment -%}
+{%- if image != blank -%}
+  <img class="black-series__bag black-series__bag--{{ slot }}" src="{{ image | image_url: width: 1400 }}"
+       width="{{ image.width }}" height="{{ image.height }}" alt="{{ image.alt | default: alt | escape }}" loading="lazy">
+{%- else -%}
+  <img class="black-series__bag black-series__bag--{{ slot }}" src="{{ fallback | asset_url }}"
+       width="{{ w }}" height="2300" alt="{{ alt }}" loading="lazy">
+{%- endif -%}

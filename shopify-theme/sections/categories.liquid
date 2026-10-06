@@ -14,8 +14,21 @@
           if bundled contains key
             assign fallback_asset = 'cat-' | append: key | append: '-2x.png'
           endif
+          # Where the card goes: Shop All opened on this product type's tab (the
+          # same URL a Search & Discovery Product type filter uses), else the
+          # chosen collection, else nowhere.
+          assign card_url = ''
+          if block.settings.product_type != blank
+            assign type_param = block.settings.product_type | strip | url_param_escape
+            assign card_url = routes.all_products_collection_url | append: '?filter.p.product_type=' | append: type_param
+          elsif block.settings.link != blank
+            assign card_url = block.settings.link.url
+          endif
         -%}
-        <article class="category-card" {{ block.shopify_attributes }}>
+        {%- comment -%} With a destination, the whole card links to it: the title's
+          link stretches over the card (::after), so the optional button can stay a
+          separate link rather than nesting <a> inside <a>. {%- endcomment -%}
+        <article class="category-card{% if card_url != blank %} category-card--link{% endif %}" {{ block.shopify_attributes }}>
           <div class="category-card__image" data-section-theme="dark">
             {%- if block.settings.image != blank -%}
               <img src="{{ block.settings.image | image_url: width: 920 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
@@ -26,10 +39,16 @@
             {%- endif -%}
             <span class="noise" aria-hidden="true"></span>
           </div>
-          <h3 class="category-card__title">{{ block.settings.title }}</h3>
+          <h3 class="category-card__title">
+            {%- if card_url != blank -%}
+              <a class="category-card__link" href="{{ card_url }}">{{ block.settings.title }}<span class="category-card__arrow">{% render 'icon', name: 'arrow-up-right' %}</span></a>
+            {%- else -%}
+              {{ block.settings.title }}
+            {%- endif -%}
+          </h3>
           <p class="category-card__copy">{{ block.settings.copy }}</p>
-          {%- if section.settings.show_buttons and block.settings.link != blank -%}
-            {% render 'button', label: 'Learn More', style: 'outline', href: block.settings.link.url %}
+          {%- if section.settings.show_buttons and card_url != blank -%}
+            {% render 'button', label: 'Learn More', style: 'outline', href: card_url %}
           {%- endif -%}
         </article>
       {%- endfor -%}
@@ -64,7 +83,11 @@
         { "type": "image_picker", "id": "image", "label": "Image" },
         { "type": "text", "id": "title", "label": "Title", "default": "Backpacks" },
         { "type": "textarea", "id": "copy", "label": "Copy", "default": "Built for the daily grind. Protective and weather-ready." },
-        { "type": "collection", "id": "link", "label": "Links to collection" }
+        {
+          "type": "text", "id": "product_type", "label": "Product type",
+          "info": "Opens the Shop page on this type's tab. Must match the product type exactly, e.g. Backpack. Takes priority over the collection below."
+        },
+        { "type": "collection", "id": "link", "label": "Links to collection", "info": "Used when Product type is empty." }
       ]
     }
   ],

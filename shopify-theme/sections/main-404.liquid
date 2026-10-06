@@ -1,14 +1,48 @@
-<section class="notfound" data-section="404" data-section-theme="light">
-  <div class="notfound__inner">
-    <h1 class="notfound__title">{{ 'general.404.title' | t }}</h1>
-    <p class="notfound__body">{{ 'general.404.body' | t }}</p>
-    <a href="{{ routes.root_url }}" class="btn btn--dark"><span class="btn__label">{{ 'general.404.link' | t }}</span><span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span></a>
+{%- comment -%}
+  404 — a full-screen dark page: an oversized outlined "404" sits behind the
+  copy, two ways back (home, shop) and a search box for anyone who knew what
+  they were after. Digits rise in and the copy follows once the page cover
+  lifts (see buildMainMotion in theme.js). All wording is editable.
+{%- endcomment -%}
+<section class="notfound" data-section="404" data-section-theme="dark">
+  <span class="noise" aria-hidden="true"></span>
+  <p class="notfound__digits" aria-hidden="true">
+    <span class="notfound__digit">4</span><span class="notfound__digit">0</span><span class="notfound__digit">4</span>
+  </p>
+
+  <div class="notfound__content">
+    <p class="notfound__eyebrow" data-notfound-part>{{ section.settings.eyebrow }}</p>
+    <h1 class="notfound__title" data-notfound-part>{{ section.settings.heading }}</h1>
+    <p class="notfound__body" data-notfound-part>{{ section.settings.body }}</p>
+
+    <div class="notfound__actions" data-notfound-part>
+      {% render 'button', label: section.settings.home_label, style: 'light', href: routes.root_url %}
+      {% render 'button', label: section.settings.shop_label, style: 'outline', href: routes.all_products_collection_url, extra_class: 'notfound__btn-outline' %}
+    </div>
+
+    {%- if section.settings.show_search -%}
+      <form class="notfound__search" action="{{ routes.search_url }}" method="get" role="search" data-notfound-part>
+        <input type="hidden" name="type" value="product">
+        <label class="visually-hidden" for="notfound-search">{{ section.settings.search_placeholder }}</label>
+        <input class="notfound__search-input" id="notfound-search" type="search" name="q"
+               placeholder="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
+        <button type="submit" class="notfound__search-btn" aria-label="{{ 'general.search.search' | t }}">{% render 'icon', name: 'search' %}</button>
+      </form>
+    {%- endif -%}
   </div>
 </section>
 
 {% schema %}
 {
   "name": "404",
-  "settings": []
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Error 404" },
+    { "type": "textarea", "id": "heading", "label": "Heading", "default": "This rabbit hole leads nowhere." },
+    { "type": "textarea", "id": "body", "label": "Body", "default": "The page you're looking for has moved or never existed. Let's get you back to the good stuff." },
+    { "type": "text", "id": "home_label", "label": "Home button label", "default": "Back to home" },
+    { "type": "text", "id": "shop_label", "label": "Shop button label", "default": "Shop all bags" },
+    { "type": "checkbox", "id": "show_search", "label": "Show search box", "default": true },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Or search for a bag" }
+  ]
 }
 {% endschema %}

@@ -3,18 +3,27 @@
     <div class="site-footer__join">
       <h2 class="site-footer__join-title">{{ section.settings.join_title }}</h2>
       <p class="site-footer__join-copy">{{ section.settings.join_copy }}</p>
-      {%- form 'customer', class: 'site-footer__form' -%}
+      {%- comment -%} Shopify's newsletter form: each signup becomes a customer tagged
+        "newsletter" with email marketing set to Subscribed (Customers in admin).
+        theme.js (initNewsletter) submits it in place and shows the result here;
+        the Liquid branches below are the no-JS / spam-challenge fallback, where
+        Shopify reloads the page and returns to #footer-newsletter. {%- endcomment -%}
+      {%- form 'customer', class: 'site-footer__form', id: 'footer-newsletter' -%}
         <input type="hidden" name="contact[tags]" value="newsletter">
         {%- if form.posted_successfully? -%}
-          <p class="site-footer__form-success">Thanks — you’re on the list.</p>
+          <p class="site-footer__form-success" role="status">{{ section.settings.join_success }}</p>
         {%- else -%}
-          <input class="field" type="email" name="contact[email]" placeholder="{{ section.settings.join_placeholder }}" aria-label="{{ section.settings.join_placeholder }}" required>
+          <input class="field" type="email" name="contact[email]" placeholder="{{ section.settings.join_placeholder }}" aria-label="{{ section.settings.join_placeholder }}" autocomplete="email" required>
           <button type="submit" class="btn btn--light">
             <span class="btn__label">{{ section.settings.join_button }}</span>
             <span class="btn__icon">{% render 'icon', name: 'arrow-up-right' %}</span>
           </button>
+          <div class="site-footer__form-error" role="alert" data-newsletter-error{% if form.errors == blank %} hidden{% endif %}>
+            {%- if form.errors -%}{{ form.errors | default_errors }}{%- endif -%}
+          </div>
         {%- endif -%}
       {%- endform -%}
+      <p class="site-footer__form-success" role="status" data-newsletter-success hidden>{{ section.settings.join_success }}</p>
     </div>
     {%- comment -%} Count the columns that will actually render, so the grid sizes
       itself to 3 or 4 (or however many the merchant adds) instead of a fixed 3. {%- endcomment -%}
@@ -62,6 +71,7 @@
     { "type": "textarea", "id": "join_copy", "label": "Copy", "default": "Never miss a chance to know the next drop, and exclusive discounts at SASSi." },
     { "type": "text", "id": "join_placeholder", "label": "Input placeholder", "default": "Email for the next drop" },
     { "type": "text", "id": "join_button", "label": "Button label", "default": "Notify Me" },
+    { "type": "text", "id": "join_success", "label": "Thank-you message", "default": "Thanks — you’re on the list." },
     { "type": "header", "content": "Closer line" },
     { "type": "text", "id": "closer_text", "label": "Closer text", "default": "Designed for You to" },
     { "type": "text", "id": "closer_accent", "label": "Closer accent (red)", "default": "Carry On." }

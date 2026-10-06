@@ -1,10 +1,60 @@
-{%- comment -%} Product card — image, title, then price left / swatch dots right. Params: product (Shopify product) {%- endcomment -%}
-<a class="product-card reveal" href="{{ product.url }}">
+{%- comment -%}
+  Product card — image, title, then price left / swatch dots right.
+  Params: product (Shopify product), color (optional colour name, e.g. "Black").
+
+  With a colour, the card shows that colour's photo and links to that colour's
+  variant, so the product page opens with only its photos. The photo is picked
+  the same way the product page groups them (see main-product.liquid): the
+  variant's own image first, else the first photo whose alt text names the
+  colour, else the product's main photo. Colours the product doesn't come in
+  are ignored.
+{%- endcomment -%}
+{%- liquid
+  assign color_option = null
+  assign color_index = -1
+  for opt in product.options_with_values
+    assign dn = opt.name | downcase
+    if dn contains 'color' or dn contains 'colour'
+      assign color_option = opt
+      assign color_index = forloop.index0
+    endif
+  endfor
+
+  assign card_url = product.url
+  assign card_image = product.featured_image
+  if color != blank and color_index >= 0
+    assign want = color | strip | downcase
+    assign color_variant = null
+    for v in product.variants
+      assign vc = v.options[color_index] | strip | downcase
+      if vc == want
+        if color_variant == null or v.available and color_variant.available == false
+          assign color_variant = v
+        endif
+      endif
+    endfor
+    if color_variant
+      assign card_url = color_variant.url
+      if color_variant.featured_media
+        assign card_image = color_variant.featured_media.preview_image
+      else
+        for media in product.media
+          assign tag = media.alt | split: ' - ' | first | split: ' | ' | first | strip | downcase
+          if tag == want
+            assign card_image = media.preview_image
+            break
+          endif
+        endfor
+      endif
+    endif
+  endif
+-%}
+<a class="product-card reveal" href="{{ card_url }}">
   <div class="product-card__image">
-    {%- if product.featured_image -%}
-      <img src="{{ product.featured_image | image_url: width: 720 }}"
-           alt="{{ product.featured_image.alt | default: product.title | escape }}"
-           width="{{ product.featured_image.width }}" height="{{ product.featured_image.height }}"
+    {%- if card_image -%}
+      <img src="{{ card_image | image_url: width: 720 }}"
+           alt="{{ card_image.alt | default: product.title | escape }}"
+           width="{{ card_image.width }}" height="{{ card_image.height }}"
            loading="lazy">
     {%- else -%}
       {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}
@@ -14,15 +64,6 @@
     <p class="product-card__title">{{ product.title }}</p>
     <div class="product-card__info">
       <p class="product-card__price">{{ product.price | money }}</p>
-      {%- liquid
-        assign color_option = null
-        for opt in product.options_with_values
-          assign dn = opt.name | downcase
-          if dn contains 'color' or dn contains 'colour'
-            assign color_option = opt
-          endif
-        endfor
-      -%}
       {%- if color_option -%}
         <span class="product-card__swatches">
           {%- for v in color_option.values -%}
